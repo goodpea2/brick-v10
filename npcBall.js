@@ -1,4 +1,3 @@
-
 // npcBall.js
 import { NPC_BALL_STATS, BRICK_STATS } from './balancing.js';
 import { sounds } from './sfx.js';

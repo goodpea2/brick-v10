@@ -1,7 +1,6 @@
-
 // brickLogic.js
 import { FlyingIcon, FloatingText } from './vfx.js';
-import * as dom from '../dom.js';
+import * as dom from './dom.js';
 import { state } from './state.js';
 import { sounds } from './sfx.js';
 import * as event from './eventManager.js';

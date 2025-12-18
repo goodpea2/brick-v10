@@ -19,7 +19,7 @@ import { BRICK_LEVELING_DATA, OVERLAY_LEVELING_DATA } from './brickLeveling.js';
 import { processBrokenBricks, collectRunResource } from './brickLogic.js';
 import { NPCBall } from './npcBall.js';
 import { generateMysteryShopItems } from './ui/invasionShop.js';
-
+import * as dom from './dom.js';
 // New Modules
 import { setupController } from './gameController.js';
 import { setupInput } from './inputHandlers.js';

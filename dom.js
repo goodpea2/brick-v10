@@ -1,4 +1,3 @@
-
 // dom.js - Centralized DOM Element References
 
 export const pauseResumeBtn = document.getElementById('pauseResumeBtn');
