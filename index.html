@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title>P5js Brick Breaker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div id="root">
+     <div id="xp-bar-container">
+        <div id="xp-bar-fill"></div>
+        <div id="xp-bar-pending-fill"></div>
+    </div>
+    <div id="game-ui-overlay">
+        <div class="top-right-hud">
+            <div class="gem-bank">
+                 <span id="gem-stat">0</span> 💎
+            </div>
+             <div class="resource-bank food-bank">
+                <div class="resource-bar-fill" id="food-bar-fill"></div>
+                <span class="resource-text"><span id="food-stat">1000</span> 🥕</span>
+            </div>
+            <div class="resource-bank wood-bank">
+                <div class="resource-bar-fill" id="wood-bar-fill"></div>
+                <span class="resource-text"><span id="wood-stat">1000</span> 🪵</span>
+            </div>
+        </div>
+        <!-- Hidden elements for programmatic clicks -->
+        <div class="coin-bank" title="Open Shop" style="display: none;">
+            <span id="coin-stat">0</span> 🪙
+        </div>
+        
+        <div id="debugStatsContainer" class="stat-line debug-stats hidden" style="position: absolute; top: 15px; left: 15px;">
+            <div>Lifetime: <span id="debug-lifetime-gem-stat">0</span>💎 <span id="debug-lifetime-xp-stat">0</span>XP</div>
+            <div>HP: <span id="debug-hp-stat">0 / 0</span></div>
+            <div>Coins: <span id="debug-coin-stat">0 / 0</span></div>
+            <div id="debug-equipment-stat"></div>
+            <div id="debug-ball-info"></div>
+            <div id="debug-event-log"></div>
+        </div>
+        <div class="top-right-controls">
+            <button id="speedToggleBtn" class="top-right-btn">Speed Up</button>
+            <button id="debugViewBtn" class="top-right-btn">Debug View</button>
+        </div>
+        <div id="cheat-buttons-container" class="hidden">
+            <div class="debug-toggle-group">
+                <label><input type="checkbox" id="toggleEventLog"> Show Event Logs</label>
+                <label><input type="checkbox" id="toggleEquipmentDebug"> Show Equip Logs</label>
+            </div>
+            <!-- Home Base Cheats -->
+            <button id="cheatFillCagesBtn" class="cheat-btn">Fill All Cages</button>
+            <button id="cheatUnlockAllBallsBtn" class="cheat-btn">Unlock All Balls</button>
+            <button id="cheatLevelUpAllBtn" class="cheat-btn">Level Up Base +1</button>
+            <button id="cheatFoodBtn" class="cheat-btn">+10k 🥕</button>
+            <button id="cheatWoodBtn" class="cheat-btn">+10k 🪵</button>
+            <button id="cheatEnchantersBtn" class="cheat-btn">+100 Mats/Shells</button>
+            <button id="cheatEnchantAllBtn" class="cheat-btn">Enchant All x1</button>
+            <button id="cheatSpeedUpBtn" class="cheat-btn">x20 Speed (3s)</button>
+            
+            <!-- Run Cheats -->
+            <button id="cheatCoinBtn" class="cheat-btn">+1000 🪙</button>
+            <button id="cheatXpBtn" class="cheat-btn">+5000 XP</button>
+            <button id="cheatGiantBallBtn" class="cheat-btn">+1 Giant</button>
+            <button id="cheatGoldenShotBtn" class="cheat-btn">Trigger Golden</button>
+            <button id="cheatGetAllEqCommon" class="cheat-btn">All Common Eq</button>
+            <button id="cheatGetAllEqRare" class="cheat-btn">All Rare Eq</button>
+            <button id="cheatGetAllEqEpic" class="cheat-btn">All Epic Eq</button>
+            <button id="cheatEndTurnBtn" class="cheat-btn">End Turn</button>
+            <button id="cheatFoodRoomBtn" class="cheat-btn">Go to Food Room</button>
+            <button id="cheatWoodRoomBtn" class="cheat-btn">Go to Wood Room</button>
+            <button id="cheatDangerRoomBtn" class="cheat-btn">Go to Danger Room</button>
+            <button id="cheatLuckyRoomBtn" class="cheat-btn">Go to Lucky Room</button>
+            
+            <!-- Invasion Cheats -->
+            <button id="cheatInvasionCoinBtn" class="cheat-btn">+1000 🪙 (Inv)</button>
+            <button id="cheatInvasionLevelUpBtn" class="cheat-btn">Level Up Bricks +1</button>
+            <button id="cheatKillAllBallsBtn" class="cheat-btn">Kill All Enemies</button>
+
+            <!-- Global Cheats -->
+            <button id="cheatGemBtn" class="cheat-btn">+500 💎</button>
+            <button id="cheatLevelBtn" class="cheat-btn">+10 Lvl</button>
+            <button id="cheatUnlockSkillsBtn" class="cheat-btn">Unlock All Skills</button>
+        </div>
+    </div>
+    <div class="playground">
+      <!-- Main Content: Canvas and Toolbar -->
+      <div class="main-container">
+        <div id="canvas-container"></div>
+         <div id="ballSelector" class="hidden">
+            <button class="ball-select-btn active" data-ball-type="classic">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="explosive">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="piercing">
+                 <div class="ball-visual"></div>
+                 <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="split">
+                 <div class="ball-visual"></div>
+                 <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="brick">
+                 <div class="ball-visual"></div>
+                 <span class="ball-count-badge hidden"></span>
+            </button>
+             <button class="ball-select-btn hidden" data-ball-type="bullet">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+             <button class="ball-select-btn hidden" data-ball-type="homing">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="giant">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden">0</span>
+            </button>
+            
+            <!-- Evo 2 Balls -->
+            <button class="ball-select-btn hidden" data-ball-type="strong">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="lightning">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="cluster">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="cell">
+                <div class="ball-visual"></div>
+                <span class="ball-count-badge hidden"></span>
+            </button>
+            
+            <!-- New Evo 2 Batch -->
+            <button class="ball-select-btn hidden" data-ball-type="draining">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="spray">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="phaser">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="grow">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="cross">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="hollow">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="octo">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="gatling">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="seeker">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+            <button class="ball-select-btn hidden" data-ball-type="chase">
+                <div class="ball-visual"></div><span class="ball-count-badge hidden"></span>
+            </button>
+        </div>
+        <div id="ballSelectorArrow">▼</div>
+        <div id="left-ui-container">
+            <div id="left-context-panel" class="hidden">
+                <div class="level-display">
+                    <div id="player-level-badge">
+                        <span id="player-level-stat">1</span>
+                    </div>
+                    <div class="xp-text-display">
+                        <span id="xp-value-text">0 / 50 XP</span>
+                        <span id="xp-pending-text" class="hidden">(+0 XP)</span>
+                    </div>
+                </div>
+                <hr class="panel-divider">
+                <div id="run-context-panel" class="hidden">
+                    <h3 id="game-mode-header">ADVENTURE RUN - LVL 1</h3>
+                    
+                    <!-- CHARGE BAR UI -->
+                    <div id="run-charge-ui" style="margin-bottom: 8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+                            <div style="color:#FFD700; font-size:11px; font-weight:bold;">CHARGE ⚡️</div>
+                            <div id="run-charge-text" style="color:#ddd; font-size:10px;">0 / 500</div>
+                        </div>
+                        <div style="width:100%; height:6px; background:#333; border:1px solid #555; border-radius:3px; overflow:hidden;">
+                            <div id="run-charge-fill" style="width:0%; height:100%; background:#FFD700; transition:width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <div class="run-stats-grid">
+                        <div class="stat-box">
+                            <span class="stat-label">Balls</span>
+                            <span id="run-ball-count" class="stat-value">0</span>
+                        </div>
+                        <button id="run-shop-btn" class="stat-box interactive">
+                            <span class="stat-label">Shop</span>
+                            <span class="stat-value">🪙<span id="run-shop-coin-count">0</span></span>
+                        </button>
+                        <button id="run-equipment-btn" class="stat-box interactive">
+                            <span class="stat-label">Equipment</span>
+                            <span id="run-equipment-count" class="stat-value">0</span>
+                        </button>
+                    </div>
+                    <div id="run-loot-panel" class="context-section hidden">
+                        <h4>Collected</h4>
+                        <div class="loot-line">
+                            <span>🥕</span> <span id="run-food-count">0</span>
+                        </div>
+                        <div class="loot-line">
+                            <span>🪵</span> <span id="run-wood-count">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="ball-producer-ui" class="context-section hidden">
+                    <div class="producer-header">
+                        <h4>PRODUCE BALL</h4>
+                        <span class="production-queue-count">Queue: 0/4</span>
+                    </div>
+                    <div class="producer-grid"></div>
+                </div>
+                <div id="empty-cage-ui" class="context-section hidden">
+                    <h4>STORED BALLS</h4>
+                    <div class="producer-grid"></div>
+                </div>
+                <div id="invasion-shop-ui" class="context-section hidden">
+                    <div class="producer-header">
+                        <h4>INVASION SHOP</h4>
+                        <span class="shop-header-right" style="font-size: 1em; color: #FFD700;">
+                            <span id="invasion-shop-coin-count">0</span> 🪙
+                        </span>
+                    </div>
+                    <div class="producer-grid">
+                        <!-- Items will be injected here by JS -->
+                    </div>
+                </div>
+            </div>
+             <div id="invasion-loot-panel" class="context-section hidden">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+        <div id="editor-panel" class="hidden">
+            <div id="editor-tools-section" class="editor-section">
+                <h4>TOOLS</h4>
+                <div class="editor-grid"></div>
+            </div>
+            <div id="editor-bricks-section" class="editor-section">
+                <h4 id="editor-objects-header">BRICKS</h4>
+                <div class="editor-grid"></div>
+            </div>
+            <div id="editor-overlays-section" class="editor-section">
+                <h4>OVERLAYS</h4>
+                <div class="editor-grid"></div>
+            </div>
+            <div id="editor-actions-section" class="editor-section">
+                <!-- Finish button will be injected here for HomeBaseEditor -->
+            </div>
+        </div>
+        <div id="brick-info-panel" class="hidden">
+            <div class="brick-info-header">
+                <h3 id="brick-info-name"></h3>
+                <span id="brick-info-level"></span>
+            </div>
+            <p id="brick-info-description"></p>
+            <ul id="brick-info-stats"></ul>
+            <div class="upgrade-section">
+                <div class="upgrade-recipe">
+                    <div id="upgrade-inputs-container"></div>
+                    <span class="arrow">&rarr;</span>
+                    <div id="upgrade-output-container"></div>
+                </div>
+                <button id="brick-upgrade-btn">Upgrade <span id="brick-upgrade-cost"></span></button>
+            </div>
+            <div id="overlay-info-section" class="hidden">
+                 <div class="brick-info-header">
+                    <h3 id="overlay-info-name"></h3>
+                    <span id="overlay-info-level"></span>
+                </div>
+                <ul id="overlay-info-stats"></ul>
+                <div class="upgrade-section">
+                    <button id="overlay-upgrade-btn">Upgrade <span id="overlay-upgrade-cost"></span></button>
+                    <button id="overlay-move-btn" class="modal-action-button secondary">Move</button>
+                </div>
+            </div>
+        </div>
+        <div class="bottom-left-controls">
+            <button id="modeToggleBtn" class="bottom-left-btn hidden">Play</button>
+            <button id="editBaseBtn" class="bottom-left-btn hidden">Edit Base</button>
+            <button id="homeBaseShopBtn" class="bottom-left-btn hidden">Shop</button>
+            <button id="ballRosterBtn" class="bottom-left-btn hidden">Ball Roster</button>
+            <button id="saveGameBtn" class="bottom-left-btn hidden">Save/Load</button>
+            <button id="quickLoadBtn" class="bottom-left-btn hidden">Load Game</button>
+            <button id="invasionEndBtn" class="bottom-left-btn hidden">End Invasion</button>
+            <button id="invasionNextWaveBtn" class="bottom-left-btn hidden">Start Next Wave</button>
+        </div>
+        <div class="toolbar">
+           <button id="levelSettingsButton">Level Settings</button>
+           <button id="prevLevelBtn">Prev Level</button>
+           <button id="nextLevelBtn">Next Level</button>
+           <button id="prevWaveBtn" class="hidden">Prev Wave</button>
+           <button id="nextWaveBtn" class="hidden">Next Wave</button>
+           <button id="pauseResumeBtn">Pause</button>
+           <button id="clear">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ballTooltip"></div>
+  <div id="ballRosterTooltip"></div>
+  <div id="ballActionMenu" class="hidden"></div>
+
+  <!-- Level Generation Popup Panel -->
+  <div id="levelSettingsModal" class="modal hidden">
+    <!-- ... (content omitted for brevity, unchanged) ... -->
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h2 id="levelSettingsTitle">Level Generation Settings</h2>
+      
+      <!-- Adventure/Trial Run Settings -->
+      <div id="adventureSettingsContainer">
+          <!-- ... -->
+          <div class="settings-columns">
+            <div class="settings-column">
+              <h4>General</h4>
+               <div class="form-group">
+                    <label for="seedInput">Seed:</label>
+                    <input type="text" id="seedInput" placeholder="random">
+                </div>
+               <div class="form-group">
+                    <label for="levelPattern">Level Pattern:</label>
+                    <select id="levelPattern">
+                      <option value="scatter">Scatter</option>
+                      <option value="formulaic" selected>Formulaic</option>
+                      <option value="solid">Solid</option>
+                      <option value="checkerboard">Checkerboard</option>
+                      <option value="spiral">Spiral</option>
+                    </select>
+                </div>
+              <div class="form-group">
+                <label for="startingBalls">Starting Balls:</label>
+                <input type="number" id="startingBalls" value="5" min="1" max="10">
+              </div>
+              <div class="form-group">
+                <label for="ballSpeed">Ball Speed:</label>
+                <input type="range" id="ballSpeed" min="0.1" max="2" step="0.1" value="0.4">
+                <span id="ballSpeedValue">0.4</span>
+              </div>
+               <div class="form-group">
+                <label for="volumeSlider">Volume:</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.3">
+                <span id="volumeValue">0.30</span>
+              </div>
+              <hr>
+              <h4>Brick Settings</h4>
+              <div class="form-group">
+                <label for="goalBricks">Goal Bricks:</label>
+                <input type="number" id="goalBricks" value="3" min="1" max="50">
+              </div>
+              <div class="form-group">
+                <label for="goalBrickCountIncrement">Goal Bricks/Lvl:</label>
+                <input type="number" id="goalBrickCountIncrement" value="0.25" min="0" step="0.01">
+              </div>
+              <div class="form-group">
+                <label for="goalBrickCap">Goal Brick Cap:</label>
+                <input type="number" id="goalBrickCap" value="8" min="1">
+              </div>
+              <div class="form-group">
+                <label for="goalBrickMaxHp">Goal Brick Max HP:</label>
+                <input type="number" id="goalBrickMaxHp" value="100" min="10">
+              </div>
+              <div class="form-group">
+                <label for="extraBallBricks">+1 Ball Bricks:</label>
+                <input type="number" id="extraBallBricks" value="1" min="0" max="20">
+              </div>
+               <div class="form-group">
+                <label for="explosiveBrickChance">Explosive Chance:</label>
+                <input type="range" id="explosiveBrickChance" min="0" max="1" step="0.01" value="0.04">
+                <span id="explosiveBrickChanceValue">0.04</span>
+              </div>
+               <div class="form-group">
+                <label for="ballCageBrickChance">Ball Cage Chance:</label>
+                <input type="range" id="ballCageBrickChance" min="0" max="1" step="0.01" value="0.05">
+                <span id="ballCageBrickChanceValue">0.05</span>
+              </div>
+               <hr>
+               <h4>Bonus Level</h4>
+               <div class="form-group">
+                <label for="bonusLevelInterval">Bonus Interval:</label>
+                <input type="number" id="bonusLevelInterval" value="5" min="2">
+              </div>
+              <div class="form-group">
+                <label for="minCoinBonusMultiplier">Min Multiplier:</label>
+                <input type="number" id="minCoinBonusMultiplier" value="7" min="1">
+              </div>
+               <div class="form-group">
+                <label for="maxCoinBonusMultiplier">Max Multiplier:</label>
+                <input type="number" id="maxCoinBonusMultiplier" value="10" min="1">
+              </div>
+            </div>
+            <div class="settings-column">
+              <h4>Difficulty Progression</h4>
+              <div class="form-group">
+                <label for="brickCount">Starting Bricks:</label>
+                <input type="number" id="brickCount" value="15" min="1" max="300">
+              </div>
+              <div class="form-group">
+                <label for="brickCountIncrement">Bricks per Level:</label>
+                <input type="number" id="brickCountIncrement" value="8" min="0" max="50">
+              </div>
+                <div class="form-group">
+                <label for="maxBrickCount">Max Bricks:</label>
+                <input type="number" id="maxBrickCount" value="100" min="10" max="500">
+              </div>
+               <div class="form-group">
+                <label for="fewBrickLayoutChance">Few Brick Chance:</label>
+                <input type="range" id="fewBrickLayoutChance" min="0" max="1" step="0.01" value="0.15">
+                <span id="fewBrickLayoutChanceValue">0.15</span>
+              </div>
+              <div class="form-group">
+                <label for="fewBrickLayoutChanceMinLevel">Min Level for Few Bricks:</label>
+                <input type="number" id="fewBrickLayoutChanceMinLevel" value="10" min="1">
+              </div>
+              <div class="form-group">
+                <label for="startingBrickHp">Starting HP Pool:</label>
+                <input type="number" id="startingBrickHp" value="100" min="1">
+              </div>
+               <div class="form-group">
+                <label for="brickHpIncrement">HP Pool per Level:</label>
+                <input type="number" id="brickHpIncrement" value="80" min="0">
+              </div>
+              <div class="form-group">
+                <label for="brickHpIncrementMultiplier">HP Multiplier/Lvl:</label>
+                <input type="number" id="brickHpIncrementMultiplier" value="1.05" min="1" step="0.01">
+              </div>
+               <div class="form-group">
+                <label for="maxBrickHpIncrement">Max HP Incr/Lvl:</label>
+                <input type="number" id="maxBrickHpIncrement" value="500" min="0">
+              </div>
+              <hr>
+              <h4>Brick Overlays & Special Bricks</h4>
+               <div class="form-group">
+                <label for="builderBrickChance">Builder Chance:</label>
+                <input type="number" id="builderBrickChance" min="0" max="1" step="0.01" value="0.03">
+              </div>
+               <div class="form-group">
+                <label for="healerBrickChance">Healer Chance:</label>
+                <input type="number" id="healerBrickChance" min="0" max="1" step="0.01" value="0.03">
+              </div>
+              <hr>
+              <h4>Coin Settings</h4>
+               <div class="form-group">
+                <label for="startingCoin">Coin Pool for Bricks:</label>
+                <input type="number" id="startingCoin" value="3" min="0">
+              </div>
+               <div class="form-group">
+                <label for="coinIncrement">Coin Pool per Level:</label>
+                <input type="number" id="coinIncrement" value="3" min="0">
+              </div>
+                <div class="form-group">
+                <label for="maxCoin">Max Coin Pool:</label>
+                <input type="number"id="maxCoin" value="300" min="0">
+              </div>
+            </div>
+          </div>
+          <div class="level-io-buttons">
+              <button id="exportLevelBtn" class="modal-action-button">Export Level</button>
+              <button id="importLevelBtn" class="modal-action-button">Import Level</button>
+              <button id="levelEditorBtn" class="modal-action-button">Level Editor</button>
+          </div>
+      </div>
+      
+      <!-- Invasion Defend Settings -->
+      <div id="invasionSettingsContainer" class="hidden">
+          <div class="form-group">
+              <label for="startingHPPool">Starting HP Pool:</label>
+              <input type="number" id="startingHPPool" value="150" min="10">
+          </div>
+          <div class="form-group">
+              <label for="hpPoolIncrementPerWave">HP Pool Incr/Wave:</label>
+              <input type="number" id="hpPoolIncrementPerWave" value="50" min="0">
+          </div>
+          <div class="form-group">
+              <label for="minEnemyTypes">Min Enemy Types / Wave:</label>
+              <input type="number" id="minEnemyTypes" value="1" min="1" max="5">
+          </div>
+          <div class="form-group">
+              <label for="maxEnemyTypes">Max Enemy Types / Wave:</label>
+              <input type="number" id="maxEnemyTypes" value="3" min="1" max="5">
+          </div>
+      </div>
+
+      <button id="generateLevelButton" class="modal-action-button">Generate New Level</button>
+    </div>
+  </div>
+  
+  <!-- Shop Popup Panel -->
+  <div id="shopModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <div class="shop-header">
+          <div class="shop-header-left">
+          </div>
+          <h2>Shop</h2>
+          <div class="shop-header-right">
+              <span id="shopCoinCount">0</span> 🪙
+          </div>
+      </div>
+      
+      <div id="buyBallCard" class="buy-ball-card">
+          <h4>Extra Ball</h4>
+          <p>Get one more ball (price will increase)</p>
+          <button id="buyBallButton" class="upgrade-cost-button"></button>
+      </div>
+
+      <hr>
+      <h4>Upgrades for this run</h4>
+      <div id="upgradesGrid" class="upgrades-grid">
+         <!-- Upgrade cards will be dynamically inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop Balancing Popup Panel -->
+  <div id="shopBalancingModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <h2>Shop Balancing Settings</h2>
+      <div class="settings-columns">
+        <div class="settings-column">
+            <h4>Ball Purchase</h4>
+            <div class="form-group"><label>Base Cost:</label><input type="number" id="ballFirstCost" value="30"></div>
+            <div class="form-group"><label>Cost Increment:</label><input type="number" id="ballCostIncrement" value="10"></div>
+            <hr>
+            <h4>Mysterious Equipment</h4>
+            <div class="form-group"><label>Base Cost:</label><input type="number" id="mysteriousEquipmentBaseCost" value="100"></div>
+            <div class="form-group"><label>Cost Increment:</label><input type="number" id="mysteriousEquipmentIncrement" value="75"></div>
+            <hr>
+            <h4>Upgrade Costs</h4>
+            <div class="form-group"><label>Cost Rate:</label><input type="number" id="costIncrementRate" value="1.5" step="0.01"></div>
+            <div class="form-group"><label>Extra HP Cost:</label><input type="number" id="extraBallHpBaseCost" value="50"></div>
+            <div class="form-group"><label>Aim Length Cost:</label><input type="number" id="aimLengthBaseCost" value="30"></div>
+            <div class="form-group"><label>Explosion Dmg Cost:</label><input type="number" id="powerExplosionDamageBaseCost" value="50"></div>
+            <div class="form-group"><label>Piercing Dmg Cost:</label><input type="number" id="piercingBonusDamageBaseCost" value="50"></div>
+            <div class="form-group"><label>Split Dmg Cost:</label><input type="number" id="splitDamageBaseCost" value="80"></div>
+            <div class="form-group"><label>Brick Coin % Cost:</label><input type="number" id="brickCoinChanceBaseCost" value="50"></div>
+            <div class="form-group"><label>Bonus XP Cost:</label><input type="number" id="bonusXpBaseCost" value="50"></div>
+            <div class="form-group"><label>Bullet Dmg Cost:</label><input type="number" id="bulletDamageBaseCost" value="70"></div>
+            <div class="form-group"><label>Homing Radius Cost:</label><input type="number" id="homingExplosionRadiusBaseCost" value="80"></div>
+        </div>
+        <div class="settings-column">
+            <h4>Upgrade Values</h4>
+            <div class="form-group"><label>Extra HP Start:</label><input type="number" id="extraBallHpBaseValue" value="0"></div>
+            <div class="form-group"><label>Extra HP / Lvl:</label><input type="number" id="extraBallHpValue" value="10"></div>
+            <div class="form-group"><label>Aim Len Start:</label><input type="number" id="aimLengthBaseValue" value="0.4"></div>
+            <div class="form-group"><label>Aim Length / Lvl:</label><input type="number" id="aimLengthValue" value="0.2"></div>
+            <div class="form-group"><label>Explosion Dmg Start:</label><input type="number" id="powerExplosionDamageBaseValue" value="30"></div>
+            <div class="form-group"><label>Explosion Dmg / Lvl:</label><input type="number" id="powerExplosionDamageValue" value="10"></div>
+            <div class="form-group"><label>Piercing Dmg Start:</label><input type="number" id="piercingBonusDamageBaseValue" value="0"></div>
+            <div class="form-group"><label>Piercing Dmg / Lvl:</label><input type="number" id="piercingBonusDamageValue" value="2"></div>
+            <div class="form-group"><label>Split Dmg Start:</label><input type="number" id="splitDamageBaseValue" value="6"></div>
+            <div class="form-group"><label>Split Dmg / Lvl:</label><input type="number" id="splitDamageValue" value="2"></div>
+            <div class="form-group"><label>Brick Coin % Start:</label><input type="number" id="brickCoinChanceBaseValue" value="20"></div>
+            <div class="form-group"><label>Brick Coin % / Lvl:</label><input type="number" id="brickCoinChanceValue" value="6"></div>
+            <div class="form-group"><label>Bonus XP Start:</label><input type="number" id="bonusXpBaseValue" value="0"></div>
+            <div class="form-group"><label>Bonus XP / Lvl:</label><input type="number" id="bonusXpValue" value="10"></div>
+            <div class="form-group"><label>Bullet Dmg Start:</label><input type="number" id="bulletDamageBaseValue" value="10"></div>
+            <div class="form-group"><label>Bullet Dmg / Lvl:</label><input type="number" id="bulletDamageValue" value="5"></div>
+            <div class="form-group"><label>Homing Radius Start:</label><input type="number" id="homingExplosionRadiusBaseValue" value="0"></div>
+            <div class="form-group"><label>Homing Radius / Lvl:</label><input type="number" id="homingExplosionRadiusValue" value="0.2" step="0.1"></div>
+        </div>
+      </div>
+      <button id="applyShopSettingsButton" class="modal-action-button">Apply & Close</button>
+    </div>
+  </div>
+  
+  <!-- Level Up Popup Panel -->
+  <div id="levelUpModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+      <h2>LEVEL UP!</h2>
+      <h3>You reached Level <span id="levelUpLevel"></span>!</h3>
+      <div id="levelUpUnlockContainer">
+          <h4>New Feature Unlocked:</h4>
+          <p id="levelUpUnlockText"></p>
+      </div>
+      <button id="levelUpCloseButton" class="modal-action-button">Continue</button>
+    </div>
+  </div>
+  
+  <!-- Level Complete Popup -->
+    <div id="levelCompleteModal" class="modal hidden">
+        <!-- ... (content omitted) ... -->
+        <div class="modal-content">
+            <h2>Level Complete!</h2>
+            <div class="result-stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Balls Used</span>
+                    <span id="statLC-BallsUsed" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Damage Dealt</span>
+                    <span id="statLC-DamageDealt" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Best Turn Damage</span>
+                    <span id="statLC-BestTurnDamage" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Coins Collected</span>
+                    <span id="statLC-CoinsCollected" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">XP Collected</span>
+                    <span id="statLC-XpCollected" class="stat-value">0</span>
+                </div>
+            </div>
+            <div id="levelCompleteChoices" class="modal-button-group">
+                <!-- Branching room choices will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Popup -->
+    <div id="gameOverModal" class="modal hidden">
+        <!-- ... (content omitted) ... -->
+        <div class="modal-content">
+            <h2 id="gameOverTitle">Game Over</h2>
+            <div class="result-stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">Level Reached</span>
+                    <span id="statGO-LevelReached" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Total Balls Used</span>
+                    <span id="statGO-TotalBallsUsed" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Total Damage Dealt</span>
+                    <span id="statGO-TotalDamageDealt" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Best Combo</span>
+                    <span id="statGO-BestCombo" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Total Equipment Collected</span>
+                    <span id="statGO-TotalEquipCollected" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Total Coins Collected</span>
+                    <span id="statGO-TotalCoinsCollected" class="stat-value">0</span>
+                </div>
+            </div>
+            <hr>
+            <h4>Total Resources Collected</h4>
+            <div class="result-stats-grid">
+                <div class="stat-box">
+                    <span class="stat-label">XP</span>
+                    <span id="statGO-XpCollected" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Gems 💎</span>
+                    <span id="statGO-GemsCollected" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Food 🥕</span>
+                    <span id="statGO-FoodCollected" class="stat-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">Wood 🪵</span>
+                    <span id="statGO-WoodCollected" class="stat-value">0</span>
+                </div>
+            </div>
+            <button id="gameOverContinueButton" class="modal-action-button">Continue</button>
+        </div>
+    </div>
+
+  <!-- Equipment Popup Panel -->
+  <div id="equipmentModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+      <span class="close-button">&times;</span>
+      <div class="equipment-ui">
+          <div id="equipment-ball-slots" class="equipment-top-panel">
+              <!-- Ball slots will be dynamically inserted here -->
+          </div>
+          <div id="equipment-tooltip-container">
+              <!-- Tooltip content is injected here by JS -->
+          </div>
+          <hr id="equipment-divider">
+          <div id="equipment-inventory" class="equipment-bottom-panel">
+              <!-- Owned equipment will be dynamically inserted here -->
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skill Tree Popup Panel -->
+    <div id="skillTreeModal" class="modal hidden">
+        <!-- ... (content omitted) ... -->
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div class="shop-header">
+                <div class="shop-header-left"></div>
+                <h2>Adventure Run Skill Tree</h2>
+                <div class="shop-header-right">
+                    <span id="skillTreeGemCount">0</span> 💎
+                </div>
+            </div>
+            <p>Spend Gems on permanent upgrades for your Adventure Runs!</p>
+            <div id="skill-tree-container">
+                <!-- Skill tree rows will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+  <!-- Home Base Shop Popup Panel -->
+    <div id="homeBaseShopModal" class="modal hidden">
+        <!-- ... (content omitted) ... -->
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div class="shop-header">
+                <div class="shop-header-left">
+                    <span><span id="shopFoodCount">0</span> 🥕</span>&nbsp;
+                    <span><span id="shopWoodCount">0</span> 🪵</span>&nbsp;
+                    <span><span id="shopMetalCount">0</span> 🪨</span>&nbsp;
+                    <span><span id="shopWireCount">0</span> 🪢</span>&nbsp;
+                    <span><span id="shopFuelCount">0</span> 🧊</span>
+                </div>
+                <h2>Home Base Shop</h2>
+                <div class="shop-header-right">
+                    <span id="shopGemCount">0</span> 💎
+                </div>
+            </div>
+            <p>Spend resources to expand your base!</p>
+            <div id="home-base-shop-container" class="upgrades-grid" style="margin-top: 20px;">
+                <!-- Shop items will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+  <!-- Export Level Modal -->
+  <div id="exportLevelModal" class="modal hidden">
+      <!-- ... (content omitted) ... -->
+      <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <h2>Export Level Data</h2>
+          <p>Copy the text below to save the current level layout.</p>
+          <textarea id="exportDataTextarea" readonly></textarea>
+          <button id="copyExportBtn" class="modal-action-button">Copy to Clipboard</button>
+      </div>
+  </div>
+
+  <!-- Import Level Modal -->
+  <div id="importLevelModal" class="modal hidden">
+      <!-- ... (content omitted) ... -->
+      <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <h2>Import Level Data</h2>
+          <p>Paste the level data string into the text area below.</p>
+          <textarea id="importDataTextarea" placeholder="Paste level data here..."></textarea>
+          <button id="importConfirmBtn" class="modal-action-button">Import</button>
+      </div>
+  </div>
+
+  <!-- Save Game Modal -->
+  <div id="saveGameModal" class="modal hidden">
+      <!-- ... (content omitted) ... -->
+      <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <h2>Save / Load Game</h2>
+          <p>Copy this text to save, or paste text here to load.</p>
+          <textarea id="saveGameTextarea"></textarea>
+          <div class="modal-button-group">
+            <button id="copySaveBtn" class="modal-action-button">Copy Save to Clipboard</button>
+            <button id="loadSaveBtn" class="modal-action-button secondary">Load Data</button>
+          </div>
+      </div>
+  </div>
+  
+  <!-- Game Mode Selection Modal -->
+  <div id="gameModeModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Select Game Mode</h2>
+        <div class="gamemode-selection">
+            <div class="gamemode-card">
+                <h3>Adventure Run</h3>
+                <p id="adventureRunDescription"></p>
+                <button id="adventureRunBtn" class="modal-action-button">Play</button>
+            </div>
+            <div class="gamemode-card">
+                <h3>Trial Run</h3>
+                <p id="trialRunDescription"></p>
+                <button id="trialRunBtn" class="modal-action-button">Play</button>
+            </div>
+            <div class="gamemode-card">
+                <h3>Invasion Defend</h3>
+                <p id="invasionDefendDescription"></p>
+                <button id="invasionDefendBtn" class="modal-action-button">Play</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Abandon Run Confirmation Modal -->
+  <div id="abandonRunModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Abandon Run?</h2>
+        <p>Are you sure you want to end the current run? Adventure Runs will not be saved.</p>
+        <div class="modal-button-group">
+            <button id="abandonRunConfirmBtn" class="modal-action-button danger">Abandon</button>
+            <button id="abandonRunCancelBtn" class="modal-action-button secondary">Continue Run</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Enchantment Modal -->
+  <div id="enchantmentModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2>Ball Enchantment</h2>
+        <div class="enchant-ui">
+            <div class="enchant-ball-list">
+                <!-- Ball selection cards will be inserted here by JS -->
+            </div>
+            <div class="enchant-main-panel">
+                <!-- Main enchantment UI will be inserted here by JS -->
+            </div>
+        </div>
+    </div>
+  </div>
+
+
+<!-- Ball Roster Modal -->
+  <div id="ballRosterModal" class="modal hidden">
+    <!-- ... (content omitted) ... -->
+    <div class="modal-content roster-modal-content">
+        <span class="close-button">&times;</span>
+        <div class="roster-header">
+            <h2>Ball Roster</h2>
+            <button id="openSummonModalBtn" class="roster-summon-btn-small">Summon</button>
+        </div>
+        <div class="roster-ui">
+            <!-- Top Section: Equipped Slots -->
+            <div id="rosterLoadoutRow" class="roster-equipped-row">
+                <!-- Slots inserted via JS -->
+            </div>
+            
+            <div class="roster-content-container">
+                <!-- Single Inventory Grid -->
+                <div class="roster-inventory-section">
+                    <h3>Inventory</h3>
+                    <div id="rosterInventoryGrid" class="roster-inventory-grid">
+                        <!-- Balls inserted via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Scrap Confirmation Modal -->
+  <div id="scrapConfirmationModal" class="modal hidden">
+      <!-- ... (content omitted) ... -->
+      <div class="modal-content" style="max-width: 400px;">
+          <h2>Scrap Ball?</h2>
+          <p>Are you sure you want to scrap this ball?</p>
+          <div style="margin: 15px 0; color: #ccc;">
+              You will receive: <br>
+              <span style="color: #FFD700; font-weight: bold;">1 Shell 🐚</span> + 
+              <span style="color: #00e5ff; font-weight: bold;">1 Essence</span>
+          </div>
+          <div class="modal-button-group">
+              <button id="confirmScrapBtn" class="modal-action-button danger">Confirm Scrap</button>
+              <button id="cancelScrapBtn" class="modal-action-button secondary">Cancel</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Summon Modal -->
+  <div id="ballSummonModal" class="modal hidden">
+      <!-- ... (content omitted) ... -->
+      <div class="modal-content">
+          <span class="close-button">&times;</span>
+          <h2>Summon Balls</h2>
+          <p>Spend Shells to get random new balls.</p>
+          <div style="font-size: 2em; margin: 15px 0; text-align: center;"><span id="summonShellCount">0</span> 🐚</div>
+          <button id="summonActionBtn" class="roster-summon-btn">Summon (10 🐚)</button>
+          <div id="summonResultContainer" class="hidden">
+              <h3>You got:</h3>
+              <div id="summonResultVisual" style="width: 60px; height: 60px; margin: 10px auto;"></div>
+              <div id="summonResultName" style="font-weight: bold;"></div>
+          </div>
+      </div>
+  </div>
+
+  <script type="module" src="index.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+
+// ui/header.js
+import * as dom from '../dom.js';
+import { state } from '../state.js';
+import { XP_SETTINGS, UNLOCK_LEVELS, BALL_STATS } from '../balancing.js';
+import { updateBallSelectorUI } from './ballSelector.js';
+import { renderInvasionLootPanel, renderTrialLootPanel } from './invasionLoot.js';
+
+export function updateHeaderUI(level, mainLevel, balls, giantBalls, seed, coins, gems, food, wood, gameState, debugStats, runStats, equipmentCount, ballsInPlay = [], miniBalls = [], calculateBallDamage, combo, npcBallCount, invasionWave) {
+    const p = state.p5Instance;
+    updateProgressionUI(mainLevel, state.currentXp, state.xpForNextLevel, state.pendingXp);
+    
+    if (dom.gemStatEl) dom.gemStatEl.textContent = Math.floor(gems);
+    if (dom.foodStatEl) dom.foodStatEl.textContent = Math.floor(food);
+    if (dom.woodStatEl) dom.woodStatEl.textContent = Math.floor(wood);
+    
+    if (dom.foodBarFillEl && p) dom.foodBarFillEl.style.width = `${p.constrain((food / state.maxFood) * 100, 0, 100)}%`;
+    if (dom.woodBarFillEl && p) dom.woodBarFillEl.style.width = `${p.constrain((wood / state.maxWood) * 100, 0, 100)}%`;
+    if (dom.foodTooltipEl) dom.foodTooltipEl.textContent = `Max: ${Math.floor(state.maxFood)}`;
+    if (dom.woodTooltipEl) dom.woodTooltipEl.textContent = `Max: ${Math.floor(state.maxWood)}`;
+
+
+    if (state.gameMode === 'homeBase') {
+        dom.runLootPanel.classList.add('hidden');
+        dom.invasionLootPanel.classList.add('hidden');
+        dom.prevLevelBtn.disabled = true;
+        dom.nextLevelBtn.disabled = true;
+        
+        const chargeUI = document.getElementById('run-charge-ui');
+        if (chargeUI) chargeUI.classList.add('hidden');
+        return;
+    }
+
+    const chargeUI = document.getElementById('run-charge-ui');
+    
+    const hasChargeBall = state.currentLoadout.some(instanceId => {
+        if (!instanceId) return false;
+        const ballInstance = state.ballInventory.find(b => b.instanceId === instanceId);
+        return ballInstance && BALL_STATS.types[ballInstance.type] && BALL_STATS.types[ballInstance.type].launchCost > 0;
+    });
+
+    if (chargeUI) {
+        if (hasChargeBall) {
+            chargeUI.classList.remove('hidden');
+            const chargeFill = document.getElementById('run-charge-fill');
+            const chargeText = document.getElementById('run-charge-text');
+            
+            if (chargeFill) chargeFill.style.width = `${Math.min(100, (state.runCharge / state.runMaxCharge) * 100)}%`;
+            if (chargeText) chargeText.textContent = `${Math.floor(state.runCharge)} / ${state.runMaxCharge}`;
+        } else {
+            chargeUI.classList.add('hidden');
+        }
+    }
+
+
+    if (state.gameMode === 'invasionDefend') {
+        dom.gameModeHeader.textContent = `INVASION - WAVE ${invasionWave}`;
+        
+        dom.runBallCount.parentElement.classList.add('hidden');
+        dom.runEquipmentBtn.classList.add('hidden');
+        dom.runShopBtn.classList.add('hidden');
+        
+        dom.runLootPanel.classList.add('hidden');
+        dom.invasionLootPanel.classList.remove('hidden');
+        renderInvasionLootPanel();
+
+        dom.ballSelector.classList.add('hidden');
+        dom.ballSelectorArrow.style.visibility = 'hidden';
+
+        dom.prevLevelBtn.disabled = (invasionWave <= 1);
+        dom.nextLevelBtn.disabled = false;
+
+    } else {
+        let gameModeName = 'GAME';
+        if (state.gameMode === 'adventureRun') {
+            gameModeName = 'ADVENTURE RUN';
+        } else if (state.gameMode === 'trialRun') {
+            gameModeName = 'TRIAL RUN';
+        }
+        dom.gameModeHeader.textContent = `${gameModeName} - Level ${level}`;
+
+        const isAdventure = state.gameMode === 'adventureRun';
+        const isTrial = state.gameMode === 'trialRun';
+
+        dom.runBallCount.parentElement.classList.remove('hidden');
+        dom.runBallCount.parentElement.querySelector('.stat-label').textContent = 'Balls';
+        let ballDisplayText = '0';
+        if (isAdventure) {
+            ballDisplayText = balls;
+        } else if (isTrial) {
+            ballDisplayText = Object.values(state.trialRunBallStock).reduce((sum, count) => sum + count, 0);
+        }
+        dom.runBallCount.textContent = ballDisplayText;
+
+        const showShop = isAdventure && mainLevel >= UNLOCK_LEVELS.COINS_SHOP;
+        dom.runShopBtn.classList.toggle('hidden', !showShop);
+        if(showShop) {
+            dom.runShopBtn.querySelector('.stat-label').textContent = 'Shop';
+            dom.runShopCoinCount.textContent = Math.floor(coins);
+        }
+
+        const showEquipment = (isAdventure || isTrial) && mainLevel >= UNLOCK_LEVELS.EQUIPMENT;
+        dom.runEquipmentBtn.classList.toggle('hidden', !showEquipment);
+        if(showEquipment) {
+            dom.runEquipmentCount.textContent = equipmentCount;
+        }
+
+        if (isAdventure) {
+            const hasCollectedResources = runStats && ((runStats.totalFoodCollected > 0) || (runStats.totalWoodCollected > 0));
+            
+            if (mainLevel >= UNLOCK_LEVELS.HOME_BASE || hasCollectedResources) {
+                dom.runLootPanel.classList.remove('hidden');
+            } else {
+                dom.runLootPanel.classList.add('hidden');
+            }
+            dom.invasionLootPanel.classList.add('hidden');
+            
+            if (runStats) {
+                dom.runFoodCount.textContent = Math.floor(runStats.totalFoodCollected);
+                dom.runWoodCount.textContent = Math.floor(runStats.totalWoodCollected);
+            }
+        } else if (isTrial) {
+            dom.runLootPanel.classList.add('hidden');
+            dom.invasionLootPanel.classList.remove('hidden');
+            renderTrialLootPanel();
+        }
+        
+        updateBallSelectorUI(mainLevel, balls, giantBalls, gameState);
+
+        dom.prevLevelBtn.disabled = (level <= 1);
+        dom.nextLevelBtn.disabled = false;
+    }
+    
+    if (state.isDebugView) {
+        dom.debugLifetimeGemStat.textContent = Math.floor(state.lifetimeGems);
+        dom.debugLifetimeXpStat.textContent = Math.floor(state.lifetimeXp);
+        if (debugStats) {
+            dom.debugHpStatEl.textContent = `${Math.floor(debugStats.currentHp)} / ${Math.floor(debugStats.hpPoolSpent)} / ${Math.floor(debugStats.hpPool)}`;
+            dom.debugCoinStatEl.textContent = `${Math.floor(debugStats.currentCoins)} / ${Math.floor(debugStats.coinPool)}`;
+        }
+    }
+}
+
+
+export function updateProgressionUI(mainLevel, currentXp, xpForNextLevel, pendingXp) {
+    const xpBarFill = document.getElementById('xp-bar-fill');
+    const xpBarPendingFill = document.getElementById('xp-bar-pending-fill');
+    const xpValueTextEl = document.getElementById('xp-value-text');
+    const xpPendingTextEl = document.getElementById('xp-pending-text');
+    const p = state.p5Instance;
+
+    if (!xpBarFill || !dom.playerLevelStatEl || !xpValueTextEl || !xpPendingTextEl || !p) return;
+    
+    dom.playerLevelStatEl.textContent = mainLevel;
+
+    const currentPercent = (currentXp / xpForNextLevel) * 100;
+    const pendingPercent = ((currentXp + pendingXp) / xpForNextLevel) * 100;
+    xpBarFill.style.width = `${currentPercent}%`;
+    xpBarPendingFill.style.width = `${pendingPercent}%`;
+    
+    xpValueTextEl.textContent = `${Math.floor(currentXp)} / ${Math.floor(xpForNextLevel)} XP`;
+    if (pendingXp > 0) {
+        xpPendingTextEl.textContent = `(+${Math.floor(pendingXp)} XP)`;
+        xpPendingTextEl.classList.remove('hidden');
+    } else {
+        xpPendingTextEl.textContent = '';
+        xpPendingTextEl.classList.add('hidden');
+    }
+    
+    const xpPercentForColor = Math.min(1, currentXp / xpForNextLevel);
+    const startColor = p.color(128, 128, 128);
+    const endColor = p.color(0, 229, 255);
+    const lerpAmount = Math.min(1, xpPercentForColor / 0.9);
+    const currentColor = p.lerpColor(startColor, endColor, lerpAmount);
+    
+    dom.playerLevelBadgeEl.style.backgroundColor = currentColor.toString();
+    const shadowColor = `rgba(${currentColor.levels[0]}, ${currentColor.levels[1]}, ${currentColor.levels[2]}, 0.7)`;
+    dom.playerLevelBadgeEl.style.boxShadow = `inset 0 0 3px rgba(0,0,0,0.5), 0 0 5px ${shadowColor}`;
+    dom.playerLevelBadgeEl.style.setProperty('--shadow-color', shadowColor);
+}

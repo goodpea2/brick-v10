@@ -1,0 +1,667 @@
+// vfx.js
+import { XP_SETTINGS, ENCHANTER_STATS } from './balancing.js';
+
+export class Particle { 
+    constructor(p, x, y, c, velMag = 3, options={}) { 
+        this.p = p; 
+        this.pos = p.createVector(x, y); 
+        this.vel = options.vel || p.constructor.Vector.random2D().mult(p.random(0.5, velMag)); 
+        this.lifespan = options.lifespan || 255; 
+        this.color = c; 
+        this.size = options.size || 5; 
+        if(options.target) { 
+            this.target = options.target.copy(); 
+            this.accel = p.constructor.Vector.sub(this.target, this.pos).normalize().mult(0.5); 
+        }
+        // Debris logic
+        this.isDebris = options.isDebris || false;
+        if (this.isDebris) {
+            this.angle = p.random(p.TWO_PI);
+            this.angularVel = p.random(-0.2, 0.2);
+            this.gravity = p.createVector(0, 0.2); // Subtle gravity
+        }
+    } 
+    update() { 
+        if(this.target) { 
+            this.vel.add(this.accel); 
+            this.vel.limit(8); 
+        } else if (this.isDebris) {
+            this.vel.add(this.gravity);
+            this.vel.mult(0.95); // Drag
+            this.angle += this.angularVel;
+        } else { 
+            this.vel.mult(0.95); 
+        } 
+        this.pos.add(this.vel); 
+        this.lifespan -= (this.isDebris ? 4 : 6); 
+        if(this.target && this.p.dist(this.pos.x, this.pos.y, this.target.x, this.target.y) < 10) { 
+            this.lifespan = 0;
+        } 
+    } 
+    draw() { 
+        this.p.noStroke(); 
+        this.p.fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], this.lifespan); 
+        
+        if (this.isDebris) {
+            this.p.push();
+            this.p.translate(this.pos.x, this.pos.y);
+            this.p.rotate(this.angle);
+            this.p.rectMode(this.p.CENTER);
+            this.p.rect(0, 0, this.size, this.size);
+            this.p.pop();
+        } else {
+            this.p.ellipse(this.pos.x, this.pos.y, this.size, this.size); 
+        }
+    } 
+    isFinished() { 
+        return this.lifespan < 0; 
+    } 
+}
+
+export class BreadCrumb {
+    constructor(p, x, y) {
+        this.p = p;
+        this.pos = p.createVector(x, y);
+        this.radius = 4; 
+        this.invulnerableTimer = 60; // 1 second at 60fps
+        this.randomOffset = p.random(p.TWO_PI);
+    }
+
+    update() {
+        if (this.invulnerableTimer > 0) this.invulnerableTimer--;
+    }
+
+    draw() {
+        const p = this.p;
+        const colorBase = p.color(50, 255, 50); // Bright Green
+
+        let alpha = 255;
+        if (this.invulnerableTimer > 0) {
+            alpha = p.map(this.invulnerableTimer, 60, 0, 50, 200);
+        }
+        
+        // Identical style to XpOrb but green
+        p.noStroke();
+        const shine = p.map(p.sin(p.frameCount * 0.1 + this.randomOffset), -1, 1, 0.2, 0.4); 
+        p.fill(colorBase.levels[0], colorBase.levels[1], colorBase.levels[2], alpha * shine);
+        p.ellipse(this.pos.x, this.pos.y, this.radius * 3);
+        
+        // Core Orb
+        p.fill(colorBase.levels[0], colorBase.levels[1], colorBase.levels[2], alpha);
+        p.ellipse(this.pos.x, this.pos.y, this.radius * 2);
+    }
+
+    isFinished() {
+        return false; 
+    }
+}
+
+export class Shockwave { 
+    constructor(p, x, y, r, c, w = 8) { 
+        this.p = p; 
+        this.pos = p.createVector(x, y); 
+        this.radius = r; 
+        this.lifespan = 40; 
+        this.color = c || p.color(255,150,0); 
+        this.maxWeight = w; 
+    } 
+    update() { 
+        this.lifespan--; 
+    } 
+    draw() { 
+        this.p.noFill(); 
+        const progress = (40 - this.lifespan) / 40; 
+        const a = (1 - progress) * 255; 
+        const c = this.color; 
+        this.p.stroke(c.levels[0], c.levels[1], c.levels[2], a); 
+        this.p.strokeWeight(progress * this.maxWeight); 
+        this.p.ellipse(this.pos.x, this.pos.y, this.radius * 2); 
+    } 
+    isFinished() { 
+        return this.lifespan <= 0; 
+    } 
+}
+
+export class FloatingText { 
+    constructor(p, x, y, t, c, options = {}) { 
+        this.p = p; 
+        this.pos = p.createVector(x, y); 
+        this.vel = options.vel || p.createVector(0, -1); 
+        this.text = t; 
+        this.color = c; 
+        this.lifespan = options.lifespan || 80; 
+        this.size = options.size || 14; 
+        this.accel = options.accel || p.createVector(0,0); 
+        this.isBold = options.isBold || false; 
+        this.scale = 1.0; 
+        this.scaleRate = options.scaleRate || 0;
+        this.glow = options.glow || false;
+    } 
+    update() { 
+        this.vel.add(this.accel); 
+        this.pos.add(this.vel); 
+        this.lifespan--; 
+        this.scale += this.scaleRate; 
+    } 
+    draw() { 
+        const a = this.p.map(this.lifespan, 0, 80, 0, 255); 
+        this.p.fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], a); 
+        this.p.noStroke(); 
+        this.p.textSize(this.size * this.scale); 
+        if (this.isBold) this.p.textStyle(this.p.BOLD);
+
+        if (this.glow) {
+            this.p.drawingContext.shadowBlur = 10;
+            const glowColor = this.p.color(this.color);
+            glowColor.setAlpha(a);
+            this.p.drawingContext.shadowColor = glowColor.toString();
+        }
+
+        this.p.textAlign(this.p.CENTER, this.p.CENTER); 
+        this.p.text(this.text, this.pos.x, this.pos.y); 
+
+        if (this.glow) {
+            this.p.drawingContext.shadowBlur = 0;
+            this.p.drawingContext.shadowColor = 'transparent';
+        }
+
+        if (this.isBold) this.p.textStyle(this.p.NORMAL); 
+    } 
+    isFinished() { 
+        return this.lifespan < 0; 
+    } 
+}
+
+export class PowerupVFX { 
+    constructor(p, x, y) { 
+        this.p = p; 
+        this.pos = p.createVector(x, y); 
+        this.radius = 0; 
+        this.maxRadius = 30; 
+        this.lifespan = 20; 
+    } 
+    update() { 
+        this.lifespan--; 
+        this.radius = this.p.map(20 - this.lifespan, 0, 20, 0, this.maxRadius); 
+    } 
+    draw() { 
+        const a = this.p.map(this.lifespan, 0, 20, 255, 0); 
+        this.p.noFill(); 
+        this.p.stroke(255, 255, 100, a); 
+        this.p.strokeWeight(3); 
+        this.p.ellipse(this.pos.x, this.pos.y, this.radius * 2); 
+    } 
+    isFinished() { 
+        return this.lifespan < 0; 
+    } 
+}
+
+export class StripeFlash {
+    constructor(p, brick, direction, board) {
+        this.p = p;
+        this.direction = direction;
+        this.lifespan = 20; 
+        const brickPos = brick.getPixelPos(board);
+        if (direction === 'horizontal') {
+            this.x = board.x;
+            this.y = brickPos.y;
+            this.w = board.width;
+            this.h = brick.size;
+        } else { // vertical
+            this.x = brickPos.x;
+            this.y = board.y;
+            this.w = brick.size;
+            this.h = board.height;
+        }
+    }
+    update() { this.lifespan--; }
+    isFinished() { return this.lifespan <= 0; }
+    draw() {
+        const p = this.p;
+        const progress = (20 - this.lifespan) / 20;
+        const alpha = p.map(progress, 0, 1, 200, 0);
+        const sizeMultiplier = p.map(progress, 0, 1, 0.1, 1.5);
+        p.noStroke();
+        p.fill(255, 200, 200, alpha);
+        if (this.direction === 'horizontal') {
+            p.rect(this.x, this.y + this.h/2 * (1 - sizeMultiplier), this.w, this.h * sizeMultiplier);
+        } else {
+            p.rect(this.x + this.w/2 * (1 - sizeMultiplier), this.y, this.w * sizeMultiplier, this.h);
+        }
+    }
+}
+
+export class XpOrb {
+    constructor(p, x, y) {
+        this.p = p;
+        this.pos = p.createVector(x, y);
+        this.vel = p.constructor.Vector.random2D().mult(p.random(2, 5));
+        this.cooldown = XP_SETTINGS.invulnerableTime;
+        this.isAttracted = false;
+        this.radius = 4;
+        this.attractionForce = XP_SETTINGS.magneticStrength;
+        
+        this.state = 'idle'; // idle, attracted, collecting
+        this.collectionTimer = 0;
+        this.maxCollectionTime = 15; // frames
+        this.randomOffset = p.random(p.TWO_PI);
+    }
+
+    collect() {
+        this.state = 'collecting';
+        this.collectionTimer = this.maxCollectionTime;
+    }
+
+    isFinished() {
+        return this.state === 'collecting' && this.collectionTimer <= 0;
+    }
+
+    update(attractors, timeMultiplier = 1, equipmentMagneticMultiplier = 1, effectiveRadiusMultiplier = XP_SETTINGS.baseMagneticRadiusMultiplier) {
+        if (this.state === 'collecting') {
+            this.collectionTimer -= timeMultiplier;
+            return; // Don't move anymore
+        }
+        
+        if (this.cooldown > 0) {
+            this.cooldown -= timeMultiplier;
+            this.vel.mult(0.9); // Slow down to a stop
+        } else if (attractors && attractors.length > 0) {
+            let closestDistSq = Infinity;
+            let closestAttractor = null;
+
+            for (const attractor of attractors) {
+                const dSq = this.p.constructor.Vector.sub(this.pos, attractor.pos).magSq();
+                if (dSq < closestDistSq) {
+                    closestDistSq = dSq;
+                    closestAttractor = attractor;
+                }
+            }
+            
+            const magneticRadius = closestAttractor instanceof Object && closestAttractor.radius ? closestAttractor.radius : this.radius * 2;
+            if (closestAttractor && closestDistSq < this.p.sq(magneticRadius * effectiveRadiusMultiplier * equipmentMagneticMultiplier)) {
+                this.isAttracted = true;
+                this.state = 'attracted';
+                const accel = this.p.constructor.Vector.sub(closestAttractor.pos, this.pos);
+                accel.normalize();
+                accel.mult(this.attractionForce * timeMultiplier);
+                this.vel.add(accel);
+                this.vel.limit(15);
+            } else {
+                this.isAttracted = false;
+                if (this.state === 'attracted') this.state = 'idle';
+            }
+        }
+
+        if (!this.isAttracted) {
+             this.vel.mult(0.95);
+        }
+        
+        this.pos.add(this.vel);
+    }
+    
+    draw() {
+        const p = this.p;
+        
+        if (this.state === 'collecting') {
+            const progress = 1 - (this.collectionTimer / this.maxCollectionTime);
+            const radius = this.radius * 2 * (1 - progress * 2);
+            const alpha = 255 * (1 - progress);
+            p.noStroke();
+            p.fill(150, 229, 255, alpha * 0.8);
+            p.ellipse(this.pos.x, this.pos.y, radius * 2);
+            return;
+        }
+
+        const colorBase = p.color(0, 229, 255);
+        let alpha = 255;
+        if (this.cooldown > 0) {
+            alpha = p.map(this.cooldown, XP_SETTINGS.invulnerableTime, 0, 50, 200);
+        }
+        
+        // Glow with idle shine
+        p.noStroke();
+        const shine = p.map(p.sin(p.frameCount * 0.1 + this.randomOffset), -1, 1, 0.2, 0.4);
+        p.fill(colorBase.levels[0], colorBase.levels[1], colorBase.levels[2], alpha * shine);
+        p.ellipse(this.pos.x, this.pos.y, this.radius * 3);
+        
+        // Orb
+        p.fill(colorBase.levels[0], colorBase.levels[1], colorBase.levels[2], alpha);
+        p.ellipse(this.pos.x, this.pos.y, this.radius * 2);
+    }
+}
+
+export class LootOrb {
+    constructor(p, x, y, type, amount = 1) {
+        this.p = p;
+        this.pos = p.createVector(x, y);
+        this.vel = p.constructor.Vector.random2D().mult(p.random(2, 5));
+        this.cooldown = XP_SETTINGS.invulnerableTime; // Reuse XP setting for initial cooldown
+        this.isAttracted = false;
+        this.radius = 6;
+        this.attractionForce = XP_SETTINGS.magneticStrength;
+        this.type = type;
+        this.amount = amount;
+        
+        if (type === 'shell') {
+            this.icon = '🐚';
+        } else {
+            this.icon = ENCHANTER_STATS[type]?.icon || '?';
+        }
+        
+        this.state = 'idle'; // idle, attracted, collecting
+        this.collectionTimer = 0;
+        this.maxCollectionTime = 15; // frames
+        this.randomOffset = p.random(p.TWO_PI);
+    }
+
+    collect() {
+        this.state = 'collecting';
+        this.collectionTimer = this.maxCollectionTime;
+    }
+
+    isFinished() {
+        return this.state === 'collecting' && this.collectionTimer <= 0;
+    }
+
+    update(attractors, timeMultiplier = 1) {
+        if (this.state === 'collecting') {
+            this.collectionTimer -= timeMultiplier;
+            return;
+        }
+        
+        if (this.cooldown > 0) {
+            this.cooldown -= timeMultiplier;
+            this.vel.mult(0.9);
+        } else if (attractors && attractors.length > 0) {
+            let closestDistSq = Infinity;
+            let closestAttractor = null;
+
+            for (const attractor of attractors) {
+                const dSq = this.p.constructor.Vector.sub(this.pos, attractor.pos).magSq();
+                if (dSq < closestDistSq) {
+                    closestDistSq = dSq;
+                    closestAttractor = attractor;
+                }
+            }
+            
+            const magneticRadius = closestAttractor.radius;
+            if (closestAttractor && closestDistSq < this.p.sq(magneticRadius * XP_SETTINGS.baseMagneticRadiusMultiplier)) {
+                this.isAttracted = true;
+                this.state = 'attracted';
+                const accel = this.p.constructor.Vector.sub(closestAttractor.pos, this.pos);
+                accel.normalize();
+                accel.mult(this.attractionForce * timeMultiplier);
+                this.vel.add(accel);
+                this.vel.limit(15);
+            } else {
+                this.isAttracted = false;
+                if (this.state === 'attracted') this.state = 'idle';
+            }
+        }
+
+        if (!this.isAttracted) {
+             this.vel.mult(0.95);
+        }
+        
+        this.pos.add(this.vel);
+    }
+    
+    draw() {
+        const p = this.p;
+        
+        if (this.state === 'collecting') {
+            const progress = 1 - (this.collectionTimer / this.maxCollectionTime);
+            const size = this.radius * 4 * (1 - progress);
+            const alpha = 255 * (1 - progress);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(size);
+            p.fill(255, alpha);
+            p.text(this.icon, this.pos.x, this.pos.y);
+            return;
+        }
+
+        let baseColor;
+        
+        if (this.type === 'shell') {
+            baseColor = p.color(255, 240, 200); // Pale Gold for shell
+        } else {
+            switch(this.type) {
+                case 'enchanter1': baseColor = p.color(144, 238, 144); break; // LightGreen
+                case 'enchanter2': baseColor = p.color(135, 206, 250); break; // LightSkyBlue
+                case 'enchanter3': baseColor = p.color(216, 191, 216); break; // Thistle (light purple)
+                default: baseColor = p.color(255);
+            }
+        }
+
+        let alpha = 255;
+        if (this.cooldown > 0) {
+            alpha = p.map(this.cooldown, XP_SETTINGS.invulnerableTime, 0, 50, 200);
+        }
+        
+        p.push();
+        p.translate(this.pos.x, this.pos.y);
+        
+        // Glow
+        p.noStroke();
+        const shine = p.map(p.sin(p.frameCount * 0.1 + this.randomOffset), -1, 1, 0.4, 0.8);
+        baseColor.setAlpha(alpha * shine * 0.5);
+        p.fill(baseColor);
+        p.ellipse(0, 0, this.radius * 5);
+        
+        // Icon
+        p.textAlign(p.CENTER, p.CENTER);
+        p.textSize(this.radius * 2.5);
+        
+        // Shadow for the icon
+        p.drawingContext.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        p.drawingContext.shadowBlur = 5;
+        
+        p.fill(255, alpha); // White icon
+        p.text(this.icon, 0, 1); // small offset for better centering with shadow
+
+        // Reset shadow
+        p.drawingContext.shadowBlur = 0;
+
+        p.pop();
+    }
+}
+
+export class LeechHealVFX {
+    constructor(p, x, y, radius) {
+        this.p = p;
+        this.pos = p.createVector(x, y);
+        this.radius = 0;
+        this.maxRadius = radius * 1.5;
+        this.lifespan = 25;
+    }
+    update() {
+        this.lifespan--;
+        const progress = (25 - this.lifespan) / 25;
+        this.radius = this.maxRadius * progress;
+    }
+    draw() {
+        const progress = (25 - this.lifespan) / 25;
+        const a = 255 * (1 - progress);
+        const w = 4 * (1 - progress);
+        this.p.noFill();
+        this.p.stroke(0, 255, 127, a);
+        this.p.strokeWeight(w);
+        this.p.ellipse(this.pos.x, this.pos.y, this.radius * 2);
+    }
+    isFinished() {
+        return this.lifespan < 0;
+    }
+}
+
+export class ZapperSparkle {
+    constructor(p, centerX, centerY, radius) {
+        this.p = p;
+        const angle = p.random(p.TWO_PI);
+        const r = p.random(radius);
+        this.pos = p.createVector(centerX + r * p.cos(angle), centerY + r * p.sin(angle));
+        this.lifespan = p.random(10, 20);
+        this.maxLifespan = this.lifespan;
+        this.len = p.random(3, 8);
+        this.angle = p.random(p.TWO_PI);
+    }
+    update() {
+        this.lifespan--;
+    }
+    isFinished() {
+        return this.lifespan <= 0;
+    }
+    draw() {
+        const p = this.p;
+        const alpha = p.map(this.lifespan, 0, this.maxLifespan, 0, 255);
+        p.push();
+        p.translate(this.pos.x, this.pos.y);
+        p.rotate(this.angle);
+        p.stroke(221, 160, 221, alpha); // Orchid color
+        p.strokeWeight(p.random(1, 2));
+        p.line(-this.len / 0, 0, this.len / 2, 0); // Corrected division
+        p.line(-this.len / 2, 0, this.len / 2, 0);
+        p.pop();
+    }
+}
+
+export class FlyingIcon {
+    constructor(p, startPos, endPos, icon, options = {}) {
+        this.p = p;
+        this.startPos = startPos.copy(); // Store original start
+        this.pos = startPos.copy();
+        this.target = endPos.copy();
+        this.icon = icon;
+        this.size = options.size || 16;
+        this.lifespan = options.lifespan || 40; // frames for travel
+        this.age = 0;
+        this.onComplete = options.onComplete || (() => {});
+        this.completed = false;
+    }
+
+    update() {
+        this.age++;
+        const progress = this.p.min(1.0, this.age / this.lifespan);
+        const easedProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+
+        this.pos = this.p.constructor.Vector.lerp(this.startPos, this.target, easedProgress);
+
+        if (this.age >= this.lifespan && !this.completed) {
+            this.completed = true;
+            this.onComplete();
+        }
+    }
+
+    draw() {
+        this.p.textAlign(this.p.CENTER, this.p.CENTER);
+        this.p.textSize(this.size);
+        this.p.text(this.icon, this.pos.x, this.pos.y);
+    }
+
+    isFinished() {
+        return this.age >= this.lifespan;
+    }
+}
+
+export class ChainVFX {
+    constructor(p, startPos, endPos) {
+        this.p = p;
+        this.startPos = startPos;
+        this.endPos = endPos;
+        this.lifespan = 20;
+        this.maxLifespan = 20;
+    }
+
+    update() {
+        this.lifespan--;
+    }
+
+    isFinished() {
+        return this.lifespan <= 0;
+    }
+
+    draw() {
+        const p = this.p;
+        const progress = this.lifespan / this.maxLifespan;
+        const alpha = 255 * progress;
+        const color = p.color(100, 200, 255, alpha);
+        
+        p.stroke(color);
+        p.strokeWeight(3 * progress);
+
+        const vec = p.constructor.Vector.sub(this.endPos, this.startPos);
+        const perp = vec.copy().rotate(p.HALF_PI).normalize();
+        const numSegments = 5;
+        const segmentLength = vec.mag() / numSegments;
+        const maxOffset = 10 * progress;
+
+        p.noFill();
+        p.beginShape();
+        p.vertex(this.startPos.x, this.startPos.y);
+        for (let i = 1; i < numSegments; i++) {
+            const posOnLine = p.constructor.Vector.add(this.startPos, vec.copy().normalize().mult(i * segmentLength));
+            const offset = perp.copy().mult(p.random(-maxOffset, maxOffset));
+            p.vertex(posOnLine.x + offset.x, posOnLine.y + offset.y);
+        }
+        p.vertex(this.endPos.x, this.endPos.y);
+        p.endShape();
+    }
+}
+
+
+export function createSplat(p, splatBuffer, x, y, brickColor, gridUnitSize) { 
+    if (!splatBuffer) return; 
+    
+    const darkerColor = p.lerpColor(brickColor, p.color(0), 0.3); 
+    splatBuffer.noStroke(); 
+    splatBuffer.fill(darkerColor.levels[0], darkerColor.levels[1], darkerColor.levels[2], 8); 
+    
+    const splatSize = gridUnitSize * 1.2; 
+    const numSplats = Math.floor(p.random(3, 6));
+
+    for (let i = 0; i < numSplats; i++) { 
+        const offsetX = p.random(-splatSize / 2, splatSize / 2); 
+        const offsetY = p.random(-splatSize / 2, splatSize / 2); 
+        const d = p.random(splatSize * 0.2, splatSize * 0.6); 
+        
+        // Create irregular shapes instead of perfect circles
+        splatBuffer.beginShape();
+        for (let j = 0; j < 6; j++) {
+            const angle = (p.TWO_PI / 6) * j;
+            const r = d * p.random(0.5, 1.0);
+            const vX = (x + offsetX) + p.cos(angle) * r;
+            const vY = (y + offsetY) + p.sin(angle) * r;
+            splatBuffer.vertex(vX, vY);
+        }
+        splatBuffer.endShape(p.CLOSE);
+    } 
+}
+
+export function createBrickHitVFX(p, x, y, c) { 
+    const vfx = [];
+    const numParticles = 8;
+    
+    // Dust/Spark particles
+    for (let i = 0; i < numParticles; i++) {
+        vfx.push(new Particle(p, x, y, c, 4, { size: p.random(2, 5) })); 
+    }
+    
+    // Debris chunks (larger, physics-based)
+    for (let i = 0; i < 5; i++) {
+        vfx.push(new Particle(p, x, y, c, 6, { 
+            size: p.random(4, 8),
+            isDebris: true,
+            lifespan: 200
+        }));
+    }
+    
+    return vfx;
+}
+
+export function createBallDeathVFX(p, x, y) {
+    const vfx = [];
+    const ballColor = p.color(0, 255, 127);
+    for (let i = 0; i < 30; i++) {
+        vfx.push(new Particle(p, x, y, ballColor, 4));
+    }
+    return vfx;
+}
