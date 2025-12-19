@@ -13,6 +13,7 @@ export const UNLOCK_DESCRIPTIONS = {
     [UNLOCK_LEVELS.EXPLOSIVE_BRICK]: "Explosive Bricks now sometimes appear in levels.",
     [UNLOCK_LEVELS.SHOP_BUY_BALL]: "You can now purchase extra balls for the current run in the shop.",
     [UNLOCK_LEVELS.PIERCING_BALL]: "Piercing Ball Unlocked! Click while this ball is moving to make it phase through several bricks.",
+    [UNLOCK_LEVELS.DANGER_LUCKY_ROOMS]: "Danger & Lucky Rooms Unlocked! You may now discover rooms with higher risks but greater rewards or mysterious lucky events.",
     [UNLOCK_LEVELS.EQUIPMENT]: "Equipment System Unlocked! Customize your balls with a variety of abilities.",
     [UNLOCK_LEVELS.STRIPE_BONUS]: "Combo Upgrade! High combos may now create powerful Stripe Bricks that clear entire lines.",
     [UNLOCK_LEVELS.BRICK_BALL]: "Brick Ball Unlocked! Click while this ball is moving to spawn a ring of 10-HP bricks.",
@@ -41,7 +42,7 @@ export const GAME_MODE_TEXT = {
     },
     invasionDefend: {
         description: "Defend your Home Base from waves of enemy balls.",
-        loot: "Available loot: 🌿🫘🧆"
+        loot: "Available loot: 🌿🫘🧆🍬"
     }
 };
 

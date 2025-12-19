@@ -95,8 +95,8 @@ export function updateUIVisibilityForMode(mode) {
     dom.editBaseBtn.classList.toggle('hidden', !isHomeBase);
     dom.homeBaseShopBtn.classList.toggle('hidden', !isHomeBase);
     
-    // Ball Roster Button (Show in Home Base if Enchantment unlocked or similar level)
-    dom.ballRosterBtn.classList.toggle('hidden', !isHomeBase || state.mainLevel < UNLOCK_LEVELS.ENCHANTMENT);
+    // Ball Roster Button (Unlocks at level 20 with Enchantment)
+    dom.ballRosterBtn.classList.toggle('hidden', !isHomeBase || state.mainLevel < UNLOCK_LEVELS.BALL_ROSTER);
     
     // Save/Load Game Buttons
     dom.saveGameBtn.classList.toggle('hidden', !isHomeBase);

@@ -668,10 +668,12 @@ export const UNLOCK_LEVELS = {
     COINS_SHOP: 3,
     COMBO_MINES: 4,
     GEMS_SKILLTREE: 5,
+    GEM_ROOM: 6,
     SPLIT_BALL: 6,
     EXPLOSIVE_BRICK: 7,
     SHOP_BUY_BALL: 8,
     PIERCING_BALL: 9,
+    DANGER_LUCKY_ROOMS: 10,
     EQUIPMENT: 10,
     STRIPE_BONUS: 11,
     BRICK_BALL: 12,
@@ -685,9 +687,11 @@ export const UNLOCK_LEVELS = {
     BALL_CAGE_BRICK: 19,
     SPECIAL_BRICKS: 1,
     ENCHANTMENT: 20,
+    BALL_ROSTER: 20,
     TRIAL_RUN: 22,
     OVERLAY_SHOP: 24,
     BRICK_UPGRADE: 26,
+    BALL_SUMMON: 28,
 };
 
 export const DEFAULT_LEVEL_SETTINGS = {
@@ -843,7 +847,7 @@ export const UPGRADE_UNLOCK_LEVELS = {
     seeker_directDamage: 1,
     chase_powerup_directDamage: 1,
 };
-// ... (rest of file)
+
 export const HOME_BASE_PRODUCTION = {
     BALL_COST_FOOD: 50,
     BALL_TIME_FRAMES: 3600,

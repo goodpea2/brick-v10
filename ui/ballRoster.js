@@ -2,7 +2,7 @@
 // ui/ballRoster.js
 import * as dom from '../dom.js';
 import { state } from '../state.js';
-import { ROSTER_CONSTANTS, ENCHANTMENT_OUTCOMES, BALL_STATS, HOME_BASE_PRODUCTION, BALL_FAMILIES, SUMMON_WEIGHTS } from '../balancing.js';
+import { ROSTER_CONSTANTS, ENCHANTMENT_OUTCOMES, BALL_STATS, HOME_BASE_PRODUCTION, BALL_FAMILIES, SUMMON_WEIGHTS, UNLOCK_LEVELS } from '../balancing.js';
 import { sounds } from '../sfx.js';
 import { BALL_ENCHANTMENT_DISPLAY_CONFIG, openEnchantmentModal } from './enchantment.js';
 import * as event from '../eventManager.js';
@@ -655,7 +655,7 @@ function showActionMenu(ball, element, source) {
 
     menu.innerHTML = '';
     
-    // UPGRADE Button
+    // UPGRADE Button (Always available in action menu if ball exists)
     const upgradeBtn = document.createElement('button');
     upgradeBtn.className = 'btn-action-upgrade';
     upgradeBtn.textContent = 'UPGRADE';
@@ -665,96 +665,99 @@ function showActionMenu(ball, element, source) {
     };
     menu.appendChild(upgradeBtn);
     
-    // EQUIP Button (Only if source is inventory and not equipped in pending)
-    if (source === 'inventory') {
-        const isEquipped = pendingLoadout.includes(ball.instanceId);
-        
-        if (!isEquipped) {
-            const equipBtn = document.createElement('button');
-            equipBtn.className = 'btn-action-use';
-            equipBtn.textContent = 'EQUIP';
+    // Level 28 locks EQUIP/UNEQUIP and SCRAP
+    if (state.mainLevel >= UNLOCK_LEVELS.BALL_SUMMON) {
+        // EQUIP Button (Only if source is inventory and not equipped in pending)
+        if (source === 'inventory') {
+            const isEquipped = pendingLoadout.includes(ball.instanceId);
             
-            // Check if slots full
-            const firstEmptySlot = pendingLoadout.indexOf(null);
-            if (firstEmptySlot === -1) {
-                // If full, do nothing (click acts as hint?)
-                equipBtn.onclick = (e) => { e.stopPropagation(); hideActionMenu(); };
-            } else {
-                 equipBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    
-                    // Unique Type Check on Inventory Equip
-                    const typeToEquip = ball.type;
-                    const existingIndex = pendingLoadout.findIndex(id => {
-                        if(!id) return false;
-                        const b = state.ballInventory.find(bi => bi.instanceId === id);
-                        return b && b.type === typeToEquip;
-                    });
-                    
-                    if (existingIndex !== -1) {
-                        pendingLoadout[existingIndex] = null; // Remove old
-                    }
+            if (!isEquipped) {
+                const equipBtn = document.createElement('button');
+                equipBtn.className = 'btn-action-use';
+                equipBtn.textContent = 'EQUIP';
+                
+                // Check if slots full
+                const firstEmptySlot = pendingLoadout.indexOf(null);
+                if (firstEmptySlot === -1) {
+                    // If full, do nothing (click acts as hint?)
+                    equipBtn.onclick = (e) => { e.stopPropagation(); hideActionMenu(); };
+                } else {
+                    equipBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        
+                        // Unique Type Check on Inventory Equip
+                        const typeToEquip = ball.type;
+                        const existingIndex = pendingLoadout.findIndex(id => {
+                            if(!id) return false;
+                            const b = state.ballInventory.find(bi => bi.instanceId === id);
+                            return b && b.type === typeToEquip;
+                        });
+                        
+                        if (existingIndex !== -1) {
+                            pendingLoadout[existingIndex] = null; // Remove old
+                        }
 
-                    // Equip to first empty
-                    pendingLoadout[firstEmptySlot] = ball.instanceId;
-                    sounds.selectBall();
-                    hideActionMenu();
-                    resetSelection();
-                    renderBallRosterUI();
+                        // Equip to first empty
+                        pendingLoadout[firstEmptySlot] = ball.instanceId;
+                        sounds.selectBall();
+                        hideActionMenu();
+                        resetSelection();
+                        renderBallRosterUI();
+                    };
+                }
+                menu.appendChild(equipBtn);
+            } else {
+                // UNEQUIP if inventory click on equipped item
+                const unequipBtn = document.createElement('button');
+                unequipBtn.className = 'btn-action-use';
+                unequipBtn.textContent = 'UNEQUIP';
+                unequipBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const slotIdx = pendingLoadout.indexOf(ball.instanceId);
+                    if (slotIdx !== -1) {
+                        pendingLoadout[slotIdx] = null;
+                        sounds.popupClose();
+                        hideActionMenu();
+                        resetSelection();
+                        renderBallRosterUI();
+                    }
                 };
+                menu.appendChild(unequipBtn);
             }
-            menu.appendChild(equipBtn);
-        } else {
-            // UNEQUIP if inventory click on equipped item?
+        }
+
+        // UNEQUIP Button (Only if source is slot)
+        if (source === 'slot') {
             const unequipBtn = document.createElement('button');
             unequipBtn.className = 'btn-action-use';
             unequipBtn.textContent = 'UNEQUIP';
             unequipBtn.onclick = (e) => {
-                 e.stopPropagation();
-                 const slotIdx = pendingLoadout.indexOf(ball.instanceId);
-                 if (slotIdx !== -1) {
-                     pendingLoadout[slotIdx] = null;
-                     sounds.popupClose();
-                     hideActionMenu();
-                     resetSelection();
-                     renderBallRosterUI();
-                 }
+                e.stopPropagation();
+                handleUnequip();
             };
             menu.appendChild(unequipBtn);
+        } 
+        
+        // SCRAP Button
+        const scrapBtn = document.createElement('button');
+        scrapBtn.className = 'btn-action-scrap';
+        scrapBtn.textContent = 'SCRAP';
+        
+        // Validation: Cannot scrap if equipped (if source is inventory, check global loadout or pending)
+        let isEquipped = pendingLoadout.includes(ball.instanceId);
+        
+        if (isEquipped) {
+            scrapBtn.disabled = true;
+            scrapBtn.style.opacity = '0.5';
+            scrapBtn.title = "Cannot scrap equipped ball";
         }
-    }
-
-    // UNEQUIP Button (Only if source is slot)
-    if (source === 'slot') {
-        const unequipBtn = document.createElement('button');
-        unequipBtn.className = 'btn-action-use';
-        unequipBtn.textContent = 'UNEQUIP';
-        unequipBtn.onclick = (e) => {
+        
+        scrapBtn.onclick = (e) => {
             e.stopPropagation();
-            handleUnequip();
+            handleScrap();
         };
-        menu.appendChild(unequipBtn);
-    } 
-    
-    // SCRAP Button
-    const scrapBtn = document.createElement('button');
-    scrapBtn.className = 'btn-action-scrap';
-    scrapBtn.textContent = 'SCRAP';
-    
-    // Validation: Cannot scrap if equipped (if source is inventory, check global loadout or pending)
-    let isEquipped = pendingLoadout.includes(ball.instanceId);
-    
-    if (isEquipped) {
-        scrapBtn.disabled = true;
-        scrapBtn.style.opacity = '0.5';
-        scrapBtn.title = "Cannot scrap equipped ball";
+        menu.appendChild(scrapBtn);
     }
-    
-    scrapBtn.onclick = (e) => {
-        e.stopPropagation();
-        handleScrap();
-    };
-    menu.appendChild(scrapBtn);
 
     menu.classList.remove('hidden');
     menu.style.position = 'fixed'; 
@@ -796,6 +799,12 @@ export function renderBallRosterUI() {
     inventoryGrid.innerHTML = '';
     
     hideStatsTooltip();
+
+    // Toggle Summon Button based on Level 28
+    const openSummonBtn = document.getElementById('openSummonModalBtn');
+    if (openSummonBtn) {
+        openSummonBtn.style.display = (state.mainLevel >= UNLOCK_LEVELS.BALL_SUMMON) ? 'block' : 'none';
+    }
 
     // --- 1. Top Loadout Row (7 Fixed Slots) ---
     for (let i = 0; i < LOADOUT_SIZE; i++) {

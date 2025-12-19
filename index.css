@@ -891,9 +891,9 @@
         flex-direction: column;
         gap: 5px;
         align-items: flex-end;
-        max-height: calc(100vh - 150px);
+        max-height: calc(100vh - 180px);
         overflow-y: auto;
-        padding-right: 5px;
+        padding: 5px;
     }
     
     body.homebase-mode .top-right-controls {
@@ -901,7 +901,7 @@
     }
     body.homebase-mode #cheat-buttons-container {
         top: 180px;
-        max-height: calc(100vh - 200px);
+        max-height: calc(100vh - 250px);
     }
 
     #cheat-buttons-container .debug-toggle-group {

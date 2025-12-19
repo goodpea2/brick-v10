@@ -110,6 +110,15 @@ export function showLevelCompleteModal(stats, gameController, level) {
         { value: { type: 'danger', text: 'Continue ⚠️', description: 'The next level will be much harder, but with bonus Gem rewards.' }, weight: 2 },
     ];
     
+    // Gating room choices based on main level
+    if (state.mainLevel < UNLOCK_LEVELS.GEM_ROOM) {
+        specialRoomChoices = specialRoomChoices.filter(choice => choice.value.type !== 'gem');
+    }
+    if (state.mainLevel < UNLOCK_LEVELS.DANGER_LUCKY_ROOMS) {
+        specialRoomChoices = specialRoomChoices.filter(choice => 
+            choice.value.type !== 'lucky' && choice.value.type !== 'danger'
+        );
+    }
     if (state.mainLevel < UNLOCK_LEVELS.HOME_BASE) {
         specialRoomChoices = specialRoomChoices.filter(choice => 
             choice.value.type !== 'food' && choice.value.type !== 'wood'
@@ -126,7 +135,7 @@ export function showLevelCompleteModal(stats, gameController, level) {
 
     const finalChoices = new Set();
     
-    if (outcome === 'normal_only') {
+    if (outcome === 'normal_only' || specialRoomChoices.length === 0) {
         finalChoices.add({ type: 'normal', text: 'Continue', description: 'Proceed to the next standard level.' });
     } else {
         let numSpecialOptions = 0;
@@ -279,6 +288,12 @@ export function showGameOverModal(title, isGameOver = false, stats, levelReached
             state.highestLevelReached = Math.max(state.highestLevelReached, levelReached);
             state.previousRunLevel = levelReached;
             dom.statGO_XpCollected.parentElement.style.display = 'block';
+            
+            // Gating Food and Wood sections in Adventure Run Game Over
+            if (state.mainLevel < UNLOCK_LEVELS.HOME_BASE) {
+                dom.statGO_FoodCollected.parentElement.style.display = 'none';
+                dom.statGO_WoodCollected.parentElement.style.display = 'none';
+            }
         }
 
         if (stats) {

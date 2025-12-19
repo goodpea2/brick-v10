@@ -427,6 +427,8 @@ export function setupController(p, context, state) {
                         
                         resetLevelState();
                         fireLasers(context); 
+
+                        if (MILESTONE_LEVELS[context.level] && !state.milestonesCompleted[context.level]) state.milestonesCompleted[context.level] = true;
                         return;
                     }
                 }
