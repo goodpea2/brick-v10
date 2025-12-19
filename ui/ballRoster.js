@@ -1,11 +1,12 @@
-
 // ui/ballRoster.js
 import * as dom from '../dom.js';
 import { state } from '../state.js';
 import { ROSTER_CONSTANTS, ENCHANTMENT_OUTCOMES, BALL_STATS, HOME_BASE_PRODUCTION, BALL_FAMILIES, SUMMON_WEIGHTS, UNLOCK_LEVELS } from '../balancing.js';
 import { sounds } from '../sfx.js';
-import { BALL_ENCHANTMENT_DISPLAY_CONFIG, openEnchantmentModal } from './enchantment.js';
+import { openEnchantmentModal } from './enchantment.js';
 import * as event from '../eventManager.js';
+import { BALL_TEXT } from '../text.js';
+import * as ui from './index.js';
 
 let ballVisuals = {};
 let gameController = null;
@@ -81,7 +82,7 @@ export function initialize(controller, visuals) {
         if (state.p5Instance) state.p5Instance.isModalOpen = false;
         dom.ballRosterModal.classList.add('hidden');
         hideActionMenu();
-        hideStatsTooltip();
+        ui.hideBallTooltip();
         resetSelection();
     });
     
@@ -160,10 +161,11 @@ export function setBallRosterVisuals(visuals) {
 
 // Generate a new blank ball instance
 export function createBallInstance(type) {
+    const textData = BALL_TEXT[type] || { name: type + " Ball" };
     return {
         instanceId: crypto.randomUUID(),
         type: type,
-        name: `${type.charAt(0).toUpperCase() + type.slice(1)} Ball`,
+        name: textData.name,
         level: 1,
         outcomes: [],
         costMultipliers: [], // Stores normalized (0-1) random rolls for cost increase per level
@@ -527,7 +529,7 @@ function executeScrap() {
     
     if (scrapModal) scrapModal.classList.add('hidden');
     renderBallRosterUI();
-    hideStatsTooltip(); 
+    ui.hideBallTooltip(); 
 }
 
 function updateSummonUI() {
@@ -584,69 +586,6 @@ function handleSummon() {
         visual.style.backgroundImage = `url(${ballVisuals[randomType]})`;
     }
     visualContainer.appendChild(visual);
-}
-
-function showStatsTooltip(ball, element) {
-    const tooltip = dom.ballRosterTooltip;
-    if (!tooltip || !element) return;
-
-    const baseStats = BALL_STATS.types[ball.type];
-    const config = BALL_ENCHANTMENT_DISPLAY_CONFIG[ball.type];
-    
-    const mockEnchData = { 
-        level: ball.level,
-        hpMultiplier: 1.0, damageMultiplier: 1.0, bonusChainDamage: 0, 
-        bonusPowerUpValue: 0, bonusEnergyShieldDuration: 0, bonusMainBallArmor: 0,
-        bonusPowerUpMineCount: 0, bonusLastPowerUpBulletCount: 0, bonusHomingExplosionDamage: 0,
-        outcomes: []
-    };
-    
-    if (ball.outcomes) {
-        ball.outcomes.forEach(key => {
-            const outcome = ENCHANTMENT_OUTCOMES[ball.type][key];
-            if (outcome) outcome.apply(mockEnchData);
-        });
-    }
-    
-    const outcomeCounts = ball.outcomes.reduce((acc, k) => { acc[k] = (acc[k]||0)+1; return acc; }, {});
-
-    let statsHTML = '';
-    if (config) {
-        statsHTML += '<ul>';
-        config.forEach(statConf => {
-            const val = statConf.getCurrent(baseStats, mockEnchData);
-            const count = outcomeCounts[statConf.key] || 0;
-            const diamonds = '♦'.repeat(count);
-            const diamondHtml = diamonds.length > 0 ? `<span class="tooltip-stats-diamonds">${diamonds}</span>` : '';
-            
-            statsHTML += `<div><span>${statConf.name}:</span> <span>${statConf.format(val)}</span> ${diamondHtml}</div>`;
-        });
-        statsHTML += '</ul>';
-    }
-
-    const currentCost = calculateProductionCost(ball);
-
-    tooltip.innerHTML = `
-        <div class="tooltip-header">
-            <span>${ball.name}</span>
-            <span class="ball-level-badge">Lv${ball.level}</span>
-        </div>
-        <div class="tooltip-desc">${BALL_STATS.types[ball.type].description || ''}</div>
-        <div class="tooltip-stats">${statsHTML}</div>
-        <div style="margin-top:8px; padding-top:8px; border-top:1px solid #444; font-size:0.9em; color:#aaa;">
-            Production Cost: <span style="color:#fff;">${currentCost} 🥕</span>
-        </div>
-    `;
-
-    tooltip.style.visibility = 'visible';
-    tooltip.style.opacity = '1';
-}
-
-function hideStatsTooltip() {
-    const tooltip = dom.ballRosterTooltip;
-    if (!tooltip) return;
-    tooltip.style.visibility = 'hidden';
-    tooltip.style.opacity = '0';
 }
 
 function showActionMenu(ball, element, source) {
@@ -798,7 +737,7 @@ export function renderBallRosterUI() {
     loadoutRow.innerHTML = '';
     inventoryGrid.innerHTML = '';
     
-    hideStatsTooltip();
+    ui.hideBallTooltip();
 
     // Toggle Summon Button based on Level 28
     const openSummonBtn = document.getElementById('openSummonModalBtn');
@@ -833,8 +772,8 @@ export function renderBallRosterUI() {
                     slotBtn.classList.add('active');
                 }
 
-                slotBtn.addEventListener('mouseenter', () => showStatsTooltip(equippedInstance, slotBtn));
-                slotBtn.addEventListener('mouseleave', hideStatsTooltip);
+                slotBtn.addEventListener('mouseenter', () => ui.showBallTooltip(equippedInstance.type, slotBtn, equippedInstance));
+                slotBtn.addEventListener('mouseleave', ui.hideBallTooltip);
                 
                 slotBtn.onclick = (e) => {
                     e.stopPropagation();
@@ -939,9 +878,9 @@ export function renderBallRosterUI() {
         
         card.addEventListener('mouseenter', () => {
              if (!dom.ballActionMenu.classList.contains('hidden')) return;
-             showStatsTooltip(ball, card);
+             ui.showBallTooltip(ball.type, card, ball);
         });
-        card.addEventListener('mouseleave', hideStatsTooltip);
+        card.addEventListener('mouseleave', ui.hideBallTooltip);
         
         card.onclick = (e) => {
             e.stopPropagation();

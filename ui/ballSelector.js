@@ -1,9 +1,10 @@
-
 // ui/ballSelector.js
 import * as dom from '../dom.js';
 import { state } from '../state.js';
 import { UNLOCK_LEVELS, BALL_STATS, ENCHANTMENT_OUTCOMES } from '../balancing.js';
 import { BALL_ENCHANTMENT_DISPLAY_CONFIG } from './enchantment.js';
+import { BALL_TEXT } from '../text.js';
+import { calculateProductionCost } from './ballRoster.js';
 
 let lastOrderedSignature = '';
 
@@ -75,50 +76,31 @@ export function showSimpleTooltip(element, text) {
 }
 
 
-export function showBallTooltip(ballType, element) {
+export function showBallTooltip(ballType, element, providedInstance = null) {
     if (!dom.ballTooltip || !element) return;
     
-    const descriptions = {
-        classic: "Has 50 extra HP.",
-        strong: "Evo2: Stronger base damage and HP.",
-        lightning: "Evo2: Chains damage to nearby bricks.",
-        explosive: "Explodes in a 2 tiles radius (2 uses)",
-        draining: "Evo2: Explosion damage scales with MISSING HP (Lower HP = More Dmg).",
-        spray: "Evo2: Standard explosion but has 3 uses.",
-        piercing: "Phases through 5 bricks (2 uses)",
-        phaser: "Evo2: Power-up ignores ALL bricks for 0.7 seconds.",
-        grow: "Evo2: Ball size increases by 50% on power-up use.",
-        split: "Spawns 2 smaller balls (1 use)",
-        cluster: "Evo2: Spawns 4 mini-balls instead of 2.",
-        cell: "Evo2: Spawns a mini-ball whenever it destroys a brick.",
-        brick: "Spawn a ring of 10 HP bricks (1 use)",
-        cross: "Evo2: Spawns bricks in a cross pattern across the board.",
-        hollow: "Evo2: Pushes existing bricks away before spawning new ones.",
-        bullet: "Fires 4 projectiles in a cross pattern (3 uses)",
-        octo: "Evo2: Fires 8 projectiles in all directions.",
-        gatling: "Evo2: Rapidly fires 6 projectiles in the direction of travel.",
-        homing: "Fires a seeking projectile that explodes (2 uses)",
-        seeker: "Evo2: Passive - Fires a homing missile whenever it destroys a brick.",
-        chase: "Evo2: Redirects itself towards the Goal brick and gains damage.",
-        giant: "One-shot ball that pierces all bricks but dies on wall contact. (Consumable)"
-    };
+    const textData = BALL_TEXT[ballType] || { name: ballType, description: "" };
     
-    // Resolve specific equipped instance for accurate stats and icons
-    let ballInstance = null;
+    // Resolve specific instance for accurate stats and icons
+    let ballInstance = providedInstance;
     let equipmentList = [];
     
-    const matchingId = state.currentLoadout.find(id => {
-        if(!id) return false;
-        const b = state.ballInventory.find(bi => bi.instanceId === id);
-        return b && b.type === ballType;
-    });
-    
-    if(matchingId) {
-        ballInstance = state.ballInventory.find(b => b.instanceId === matchingId);
-        // Get instance equipment
-        equipmentList = state.ballEquipment[matchingId] || [];
+    if (!ballInstance) {
+        // Resolve from current loadout if not provided (typical for game selector)
+        const matchingId = state.currentLoadout.find(id => {
+            if(!id) return false;
+            const b = state.ballInventory.find(bi => bi.instanceId === id);
+            return b && b.type === ballType;
+        });
+        if(matchingId) {
+            ballInstance = state.ballInventory.find(b => b.instanceId === matchingId);
+        }
+    }
+
+    // Get equipment list
+    if (ballInstance) {
+        equipmentList = state.ballEquipment[ballInstance.instanceId] || [];
     } else {
-        // Fallback to type equipment
         equipmentList = state.ballEquipment[ballType] || [];
     }
 
@@ -129,18 +111,11 @@ export function showBallTooltip(ballType, element) {
         }
     });
 
-    let name = ballType.charAt(0).toUpperCase() + ballType.slice(1);
-    // Use instance name if available
-    if (ballInstance && ballInstance.name) {
-        name = ballInstance.name;
-    } else {
-        name = name.replace(/([A-Z])/g, ' $1').trim() + ' Ball'; // Add spaces for CamelCase
-    }
-
+    let name = ballInstance?.name || textData.name;
     const baseStats = BALL_STATS.types[ballType];
     let statsHTML = '';
 
-    // If we have an instance, use its specific stats. Otherwise fallback to legacy or base.
+    // Stats Logic
     if (ballInstance && baseStats && ballType !== 'giant') {
         const displayConfig = BALL_ENCHANTMENT_DISPLAY_CONFIG[ballType];
         
@@ -173,29 +148,20 @@ export function showBallTooltip(ballType, element) {
             });
             statsHTML += '</ul>';
         }
-    } else {
-        // Fallback for legacy saves or unequipped types
-        const enchantmentData = state.ballEnchantments[ballType];
-        if (enchantmentData && baseStats && ballType !== 'giant') {
-            const displayConfig = BALL_ENCHANTMENT_DISPLAY_CONFIG[ballType];
-            if (displayConfig) {
-                statsHTML += '<ul>';
-                displayConfig.forEach(statConf => {
-                    const currentValue = statConf.getCurrent(baseStats, enchantmentData);
-                    statsHTML += `<li><span>${statConf.name}:</span> <span>${statConf.format(currentValue)}</span></li>`;
-                });
-                statsHTML += '</ul>';
-            }
-        }
     }
 
     const levelBadge = ballInstance ? `<span style="font-size:0.8em; background:rgba(255,255,255,0.2); padding:1px 4px; border-radius:4px; margin-left:5px;">Lv${ballInstance.level}</span>` : '';
     
-    // Charge cost display
-    let chargeHTML = '';
-    if (baseStats.launchCost > 0) {
+    // Bottom Logic: Cost (Launch or Production)
+    let footerHTML = '';
+    if (providedInstance) {
+        // If providedInstance exists, it's likely from Roster, show Production Cost
+        const prodCost = calculateProductionCost(providedInstance);
+        footerHTML = `<div style="margin-top:8px; padding-top:8px; border-top:1px solid #444; font-size:0.9em; color:#aaa;">Production Cost: <span style="color:#fff;">${prodCost} 🥕</span></div>`;
+    } else if (baseStats?.launchCost > 0) {
+        // Regular gameplay launch cost
         const canAfford = state.runCharge >= baseStats.launchCost;
-        chargeHTML = `<div style="margin-top:5px; border-top:1px solid #444; padding-top:5px;">Launch Cost: <span style="color:${canAfford?'#FFD700':'#ff4136'}; font-weight:bold;">${baseStats.launchCost} ⚡️</span></div>`;
+        footerHTML = `<div style="margin-top:8px; border-top:1px solid #444; padding-top:8px;">Launch Cost: <span style="color:${canAfford?'#FFD700':'#ff4136'}; font-weight:bold;">${baseStats.launchCost} ⚡️</span></div>`;
     }
 
     dom.ballTooltip.innerHTML = `
@@ -203,12 +169,12 @@ export function showBallTooltip(ballType, element) {
             <span style="display:flex; align-items:center;">${name}${levelBadge}</span>
             <div class="tooltip-icons-container">${iconsHTML}</div>
         </div>
-        <div class="tooltip-description">${descriptions[ballType] || ''}</div>
+        <div class="tooltip-description">${textData.description}</div>
         <div class="tooltip-stats">${statsHTML}</div>
-        ${chargeHTML}
+        ${footerHTML}
     `;
 
-    // Make it visible first to measure its dimensions correctly
+    // Make it visible
     dom.ballTooltip.style.visibility = 'visible';
     dom.ballTooltip.style.opacity = '1';
 
@@ -220,11 +186,9 @@ export function showBallTooltip(ballType, element) {
     let top, left;
 
     if (isLandscape) {
-        // To the right of the button
         top = btnRect.top + (btnRect.height / 2) - (tooltipRect.height / 2);
         left = btnRect.right + 10;
     } else {
-        // Above the button
         top = btnRect.top - tooltipRect.height - 10;
         left = btnRect.left + (btnRect.width / 2) - (tooltipRect.width / 2);
     }

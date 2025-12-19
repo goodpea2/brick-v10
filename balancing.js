@@ -32,7 +32,6 @@ export const BALL_STATS = {
             baseDamage: 10,
             powerUpUses: 0,
             radiusMultiplier: 0.28,
-            description: "Has 50 extra HP."
         },
         strong: { // Classic Evo 2
             evoTier: 2,
@@ -44,7 +43,6 @@ export const BALL_STATS = {
             baseDamage: 30, 
             powerUpUses: 0,
             radiusMultiplier: 0.28,
-            description: "Evo2: Stronger base damage and HP."
         },
         lightning: { // Classic Evo 2
             evoTier: 2,
@@ -57,7 +55,6 @@ export const BALL_STATS = {
             powerUpUses: 0,
             radiusMultiplier: 0.28,
             innateChainDamage: 6, 
-            description: "Evo2: Chains damage to nearby bricks."
         },
         explosive: {
             evoTier: 1,
@@ -71,7 +68,6 @@ export const BALL_STATS = {
             radiusTiles: 2.5,
             damage: 10,
             radiusMultiplier: 0.28,
-            description: "Explodes in a 2.5 tiles radius."
         },
         draining: { // Explode Evo 2
             evoTier: 2,
@@ -87,7 +83,6 @@ export const BALL_STATS = {
             explosiveDamageMax: 40,
             explosiveDamageHPGradient: [1.0, 0.0], // 1.0 (at 0 HP) -> 0.0 (at Max HP) influence of Max Damage
             radiusMultiplier: 0.28,
-            description: "Evo2: Damage scales with missing HP."
         },
         spray: { // Explode Evo 2
             evoTier: 2,
@@ -101,7 +96,6 @@ export const BALL_STATS = {
             radiusTiles: 2.5,
             damage: 10,
             radiusMultiplier: 0.28,
-            description: "Evo2: Standard explosion but with 3 uses."
         },
         piercing: {
             evoTier: 1,
@@ -115,7 +109,6 @@ export const BALL_STATS = {
             contactCount: 5,
             radiusMultiplier: 0.28,
             damageBuffOnPowerUp: 0,
-            description: "Phases through 5 bricks."
         },
         phaser: { // Pierce Evo 2
             evoTier: 2,
@@ -129,7 +122,6 @@ export const BALL_STATS = {
             phaseDuration: 0.7, // seconds
             radiusMultiplier: 0.28,
             damageBuffOnPowerUp: 0,
-            description: "Evo2: Ignores all bricks for 0.7s."
         },
         grow: { // Pierce Evo 2
             evoTier: 2,
@@ -140,11 +132,9 @@ export const BALL_STATS = {
             brickHitDamage: 2,
             baseDamage: 10,
             powerUpUses: 2,
-            contactCount: 5,
             radiusMultiplier: 0.28,
             growAmount: 0.5, // +50% Area
             damageBuffOnPowerUp: 0,
-            description: "Evo2: Size increases by 50% on power-up."
         },
         split: {
             evoTier: 1,
@@ -157,7 +147,6 @@ export const BALL_STATS = {
             powerUpUses: 1,
             miniBallCount: 2,
             radiusMultiplier: 0.28,
-            description: "Spawns 2 mini-balls."
         },
         cluster: { // Split Evo 2
             evoTier: 2,
@@ -171,7 +160,6 @@ export const BALL_STATS = {
             miniBallCount: 4, 
             radiusMultiplier: 0.30,
             innateArmor: 1,
-            description: "Evo2: Spawns 4 mini-balls."
         },
         cell: { // Split Evo 2
             evoTier: 2,
@@ -184,7 +172,6 @@ export const BALL_STATS = {
             powerUpUses: 0, 
             radiusMultiplier: 0.28,
             innateArmor: 1,
-            description: "Evo2: Spawns mini-balls on brick kill."
         },
         brick: {
             evoTier: 1,
@@ -198,7 +185,6 @@ export const BALL_STATS = {
             spawnRadiusTiles: 3,
             coinChancePercent: 20,
             radiusMultiplier: 0.28,
-            description: "Spawn a ring of bricks."
         },
         cross: { // Brick Evo 2
             evoTier: 2,
@@ -211,7 +197,6 @@ export const BALL_STATS = {
             powerUpUses: 1,
             coinChancePercent: 20,
             radiusMultiplier: 0.28,
-            description: "Evo2: Spawns bricks in cross pattern."
         },
         hollow: { // Brick Evo 2
             evoTier: 2,
@@ -225,7 +210,6 @@ export const BALL_STATS = {
             spawnRadiusTiles: 3,
             coinChancePercent: 20,
             radiusMultiplier: 0.28,
-            description: "Evo2: Pushes bricks before spawning."
         },
         bullet: {
             evoTier: 1,
@@ -240,7 +224,6 @@ export const BALL_STATS = {
             bulletDamage: 40,
             bulletCountOnPowerup: 4,
             radiusMultiplier: 0.28,
-            description: "Fires 4 projectiles."
         },
         octo: { // Bullet Evo 2
             evoTier: 2,
@@ -255,7 +238,6 @@ export const BALL_STATS = {
             bulletDamage: 30,
             bulletCountOnPowerup: 8,
             radiusMultiplier: 0.28,
-            description: "Evo2: Fires 8 projectiles."
         },
         gatling: { // Bullet Evo 2
             evoTier: 2,
@@ -271,7 +253,6 @@ export const BALL_STATS = {
             bulletInterval: 4, // frames
             bulletSpreadAngle: 0.1, // radians
             radiusMultiplier: 0.28,
-            description: "Evo2: Fires burst of projectiles."
         },
         homing: {
             evoTier: 1,
@@ -286,7 +267,6 @@ export const BALL_STATS = {
             damage: 20,
             explosionRadiusTiles: 1.5,
             radiusMultiplier: 0.28,
-            description: "Launches seeking explosion."
         },
         seeker: { // Homing Evo 2
             evoTier: 2,
@@ -300,7 +280,6 @@ export const BALL_STATS = {
             damage: 10,
             explosionRadiusTiles: 0.25,
             radiusMultiplier: 0.28,
-            description: "Evo2: Passive seeking projectiles."
         },
         chase: { // Homing Evo 2
             evoTier: 2,
@@ -313,7 +292,6 @@ export const BALL_STATS = {
             powerUpUses: 3,
             damageBuff: 4,
             radiusMultiplier: 0.28,
-            description: "Evo2: Redirects to Goal and gains damage."
         },
         giant: {
             evoTier: 1,
@@ -325,7 +303,6 @@ export const BALL_STATS = {
             baseDamage: 1000,
             powerUpUses: 0,
             radiusMultiplier: 0.8,
-            description: "Pierces all bricks. Dies on wall."
         },
         miniball: {
             hasDyingState: true,

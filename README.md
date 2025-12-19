@@ -5,7 +5,7 @@ This document outlines the design, mechanics, and technical architecture of the 
 
 ## Core Gameplay Loop
 
-The game is a modern take on the classic brick breaker genre, incorporating rogue-like progression, resource management, and deep customization. The player aims a ball, launches it, and destroys bricks on the screen.
+The game is a modern take on the brick breaker genre, incorporating rogue-like progression, resource management, and deep customization. The player aims a ball, launches it, and destroys bricks on the screen.
 
 *   **Aiming & Firing**: The player clicks and drags to aim a trajectory line, then releases to fire.
 *   **Ball Health**: Balls have HP. Hitting walls reduces HP. If HP reaches zero, the ball is destroyed.
@@ -18,7 +18,7 @@ The game is a modern take on the classic brick breaker genre, incorporating rogu
 
 1.  **Adventure Run**: Roguelike mode. Start from scratch, collect Coins (temp) and Gems (perm). Uses a standard set of balls.
 2.  **Trial Run**: Skill mode. Uses *consumable* balls produced in the Home Base. No shop, no equipment drops. Collects Materials (Metal, Wire, Fuel).
-3.  **Invasion Defend**: Tower Defense. Defend the Home Base layout from waves of NPC balls. Collects Enchanter items.
+3.  **Invasion Defend**: Tower Defense. Defend the Home Base layout from waves of NPC balls. Collects Enchanter items and Shells. The Loot Panel is integrated into the Left Context Panel for real-time tracking.
 4.  **Home Base**: Persistent base-building. Generate resources (Food, Wood), craft balls, and manage the Ball Roster.
 
 ---
@@ -40,7 +40,7 @@ The shop uses an **Additive Argument System** for all ball-specific upgrades.
 *   **`sketch.js`**: Contains the main game loop (`draw`), physics updates, and coordinates state transitions.
 *   **`gameController.js`**: The API bridge. Allows UI modules to interact with the game state (e.g., `resetGame`, `upgradeBrick`) without direct dependency on p5 internals.
 *   **`state.js`**: A singleton object holding all mutable game data.
-    *   *Persistent*: XP, Gems, Home Base layout, Ball Inventory (`ballInventory`), Loadout (`currentLoadout`), Unlocks.
+    *   *Persistent*: XP, Gems, Shells, Home Base layout, Ball Inventory (`ballInventory`), Loadout (`currentLoadout`), Unlocks.
     *   *Transient*: Current run coins, active balls (`ballsInPlay`), combo count.
 *   **`balancing.js`**: Configuration file for all static data (stats, costs, drop rates, unlock levels).
 

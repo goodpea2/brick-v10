@@ -248,10 +248,14 @@ export function initializeInput(gameController, runCode) {
         if (gameState === 'gameOver') {
             if (state.gameMode === 'invasionDefend') {
                 const runStats = gameController.getRunStats();
-                if (runStats && runStats.enchantersCollected) {
-                    for (const enchanterId in runStats.enchantersCollected) {
-                        state.playerEnchanters[enchanterId] = (state.playerEnchanters[enchanterId] || 0) + runStats.enchantersCollected[enchanterId];
+                if (runStats) {
+                    if (runStats.enchantersCollected) {
+                        for (const enchanterId in runStats.enchantersCollected) {
+                            state.playerEnchanters[enchanterId] = (state.playerEnchanters[enchanterId] || 0) + runStats.enchantersCollected[enchanterId];
+                        }
                     }
+                    // PERSIST SHELLS
+                    state.playerShells += (runStats.shellsCollected || 0);
                 }
             } else if (state.gameMode === 'trialRun') {
                  const runStats = gameController.getRunStats();
@@ -289,8 +293,6 @@ export function initializeInput(gameController, runCode) {
             }
         }
     });
-
-    // Shop balancing button handler removed because the button was removed from HTML.
 
     window.addEventListener('click', (e) => {
         if (e.target === dom.gameModeModal) { sounds.popupClose(); if (state.p5Instance) state.p5Instance.isModalOpen = false; dom.gameModeModal.classList.add('hidden'); }
@@ -860,13 +862,6 @@ export function initializeInput(gameController, runCode) {
         dom.ballRosterModal.classList.remove('hidden');
     });
     
-    // Wire up Close Roster Button
-    dom.ballRosterModal.querySelector('.close-button').addEventListener('click', () => {
-        sounds.popupClose();
-        if (state.p5Instance) state.p5Instance.isModalOpen = false;
-        dom.ballRosterModal.classList.add('hidden');
-    });
-
     // Initial UI setup
     document.querySelectorAll('.ball-select-btn').forEach(btn => {
         btn.addEventListener('mouseenter', () => {

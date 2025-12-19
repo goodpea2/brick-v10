@@ -1,5 +1,4 @@
 
-
 // text.js
 
 import { UNLOCK_LEVELS } from './balancing.js';
@@ -29,6 +28,98 @@ export const UNLOCK_DESCRIPTIONS = {
     [UNLOCK_LEVELS.TRIAL_RUN]: "Trial Run Unlocked! Use your own balls to collect special materials.",
     [UNLOCK_LEVELS.OVERLAY_SHOP]: "Overlays Unlocked! You can now purchase powerful overlays in the Home Base Shop.",
     [UNLOCK_LEVELS.BRICK_UPGRADE]: "Brick Upgrading Unlocked! Level up your buildings to increase their efficiency.",
+    [UNLOCK_LEVELS.BALL_SUMMON]: "Ball Summon Unlocked! You can now get more balls to further customize your roster.",
+};
+
+export const BALL_TEXT = {
+    classic: {
+        name: "Classic Ball",
+        description: "Basic, but durable"
+    },
+    strong: {
+        name: "Strong Ball",
+        description: "Heavy damage, lighter HP"
+    },
+    lightning: {
+        name: "Lightning Ball",
+        description: "Chains damage to 3 nearest bricks"
+    },
+    explosive: {
+        name: "Explosive Ball",
+        description: "Explodes in a 2.5 tiles radius ♦️♦️"
+    },
+    draining: {
+        name: "Draining Ball",
+        description: "Explosion damage scales up with lower HP ♦️♦️"
+    },
+    spray: {
+        name: "Spray Ball",
+        description: "Explodes in a 2.5 tiles radius ♦️♦️♦️"
+    },
+    piercing: {
+        name: "Piercing Ball",
+        description: "Pierces through 5 bricks ♦️♦️"
+    },
+    phaser: {
+        name: "Phaser Ball",
+        description: "Ignores bricks for 0.7 seconds ♦️♦️"
+    },
+    grow: {
+        name: "Grow Ball",
+        description: "Pierces through 5 bricks and increases its own size ♦️♦️"
+    },
+    split: {
+        name: "Split Ball",
+        description: "Spawns 2 mini-balls ♦️"
+    },
+    cluster: {
+        name: "Cluster Ball",
+        description: "Spawns 4 mini-balls ♦️"
+    },
+    cell: {
+        name: "Cell Ball",
+        description: "Spawns a mini-ball whenever it destroys a brick"
+    },
+    brick: {
+        name: "Brick Ball",
+        description: "Spawn a ring of 10-HP bricks ♦️"
+    },
+    cross: {
+        name: "Cross Ball",
+        description: "Spawns 10-HP bricks in a cross pattern ♦️"
+    },
+    hollow: {
+        name: "Hollow Ball",
+        description: "Spawn a ring of 10-HP bricks, bricks from the inner ring get pushed away ♦️"
+    },
+    bullet: {
+        name: "Bullet Ball",
+        description: "Fires 4 bullets in a cross pattern ♦️♦️♦️"
+    },
+    octo: {
+        name: "Octo Ball",
+        description: "Fires 8 bullets in all directions ♦️♦️♦️"
+    },
+    gatling: {
+        name: "Gatling Ball",
+        description: "Rapidly fires 6 bullets in the ball's direction ♦️♦️"
+    },
+    homing: {
+        name: "Homing Ball",
+        description: "Fires a homing missile towards the nearest Goal Brick ♦️♦️"
+    },
+    seeker: {
+        name: "Seeker Ball",
+        description: "Fires a tiny homing bullet whenever it destroys a brick"
+    },
+    chase: {
+        name: "Chase Ball",
+        description: "Redirects itself towards the nearest Goal brick, gain extra damage ♦️♦️♦️"
+    },
+    giant: {
+        name: "Giant Ball",
+        description: "Ultimate: Pierce through all bricks, has limited durability!"
+    }
 };
 
 export const GAME_MODE_TEXT = {
@@ -37,7 +128,7 @@ export const GAME_MODE_TEXT = {
         loot: "Available loot: 💎🥕🪵"
     },
     trialRun: {
-        description: "Test your skills using your own produced balls. No shop, no equipment.\nHighest level reached: {trialRunHighestLevelReached}",
+        description: "Test your skills using your own produced balls. No shop, single-use equipment.\nHighest level reached: {trialRunHighestLevelReached}",
         loot: "Available loot: 💎🪨🪢🧊"
     },
     invasionDefend: {
