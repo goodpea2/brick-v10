@@ -407,7 +407,7 @@ export const sketch = (p, state, callbacks) => {
         
                     if (goalBricksLeft === 0) {
                         context.gameState = 'levelComplete';
-                        if (MILESTONE_LEVELS[context.level] && !state.milestonesCompleted[level]) state.milestonesCompleted[context.level] = true;
+                        if (MILESTONE_LEVELS[context.level] && !state.milestonesCompleted[context.level]) state.milestonesCompleted[context.level] = true;
                     } else context.gameState = 'aiming';
                     
                     if (context.gameState === 'aiming' && oldGameState !== 'aiming') fireLasers(context);

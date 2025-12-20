@@ -78,7 +78,6 @@ function onTurnStart(payload) {
         }
     });
 }
-// ... (rest of file remains unchanged as getActiveEquipment helper is the key fix)
 
 function onTurnEnd(payload) {
     // Consume used equipment in Trial Run
@@ -250,6 +249,11 @@ function onBrickDestroyed(payload) {
     
     const equipment = getActiveEquipment(sourceBall);
     const isMini = sourceBall instanceof MiniBall;
+
+    // Apply Enchantment Vampirism first
+    if (sourceBall.bonusVampireHeal > 0) {
+        if(state.p5Instance) state.p5Instance.healBall(sourceBall.bonusVampireHeal);
+    }
 
     equipment.forEach(item => {
         if (item.id === 'vampire') {

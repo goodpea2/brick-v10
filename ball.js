@@ -320,6 +320,25 @@ export class MiniBall {
     }
 
     recalculateStats() {
+        const type = this.parentType;
+        let inventoryItem = null;
+        if (this.parentInstanceId) {
+            inventoryItem = state.ballInventory.find(b => b.instanceId === this.parentInstanceId);
+        }
+
+        let computedStats = { 
+            hpMultiplier: 1.0, damageMultiplier: 1.0, explosionDamageMultiplier: 1.0, bonusChainDamage: 0, 
+            bonusPowerUpValue: 0, bonusEnergyShieldDuration: 0, bonusMainBallArmor: 0, 
+            bonusPowerUpMineCount: 0, bonusLastPowerUpBulletCount: 0, bonusHomingExplosionDamage: 0,
+            bonusVampireHeal: 0, bonusPowerUpDirectDamage: 0, bonusBulletCount: 0 
+        };
+        if (inventoryItem?.outcomes) {
+            inventoryItem.outcomes.forEach(key => {
+                const outcomeDef = ENCHANTMENT_OUTCOMES[type][key];
+                if (outcomeDef) outcomeDef.apply(computedStats);
+            });
+        }
+
         const equipment = this.getActiveEquipment();
         let baseRadiusMult = BALL_STATS.types.miniball.radiusMultiplier;
         let areaAdd = 0;
@@ -337,6 +356,11 @@ export class MiniBall {
             this.maxHp = trashBin.config.setHp;
             this.hp = Math.min(this.hp, this.maxHp);
         }
+
+        this.bonusVampireHeal = computedStats.bonusVampireHeal;
+        this.bonusPowerUpDirectDamage = computedStats.bonusPowerUpDirectDamage;
+        this.bonusBulletCount = computedStats.bonusBulletCount;
+        this.explosionDamageMultiplier = computedStats.explosionDamageMultiplier;
     }
 
     takeDamage(amount, source = 'brick', position = this.pos) {
@@ -567,7 +591,12 @@ export class Ball {
             inventoryItem = state.ballInventory.find(b => b.instanceId === this.instanceId);
         }
 
-        let computedStats = { hpMultiplier: 1.0, damageMultiplier: 1.0, bonusChainDamage: 0, bonusPowerUpValue: 0, bonusEnergyShieldDuration: 0, bonusMainBallArmor: 0, bonusPowerUpMineCount: 0, bonusLastPowerUpBulletCount: 0, bonusHomingExplosionDamage: 0 };
+        let computedStats = { 
+            hpMultiplier: 1.0, damageMultiplier: 1.0, explosionDamageMultiplier: 1.0, bonusChainDamage: 0, 
+            bonusPowerUpValue: 0, bonusEnergyShieldDuration: 0, bonusMainBallArmor: 0, 
+            bonusPowerUpMineCount: 0, bonusLastPowerUpBulletCount: 0, bonusHomingExplosionDamage: 0,
+            bonusVampireHeal: 0, bonusPowerUpDirectDamage: 0, bonusBulletCount: 0 
+        };
         if (inventoryItem?.outcomes) {
             inventoryItem.outcomes.forEach(key => {
                 const outcomeDef = ENCHANTMENT_OUTCOMES[type][key];
@@ -596,6 +625,7 @@ export class Ball {
         else this.hp = Math.min(this.hp, this.maxHp);
 
         this.damageMultiplier = computedStats.damageMultiplier; 
+        this.explosionDamageMultiplier = computedStats.explosionDamageMultiplier;
         this.bonusChainDamage = computedStats.bonusChainDamage + (baseStats.innateChainDamage || 0); 
         this.bonusEnergyShieldDuration = computedStats.bonusEnergyShieldDuration;
         this.bonusMainBallArmor = computedStats.bonusMainBallArmor + (baseStats.innateArmor || 0); 
@@ -604,6 +634,10 @@ export class Ball {
         this.bonusHomingExplosionDamage = computedStats.bonusHomingExplosionDamage;
         this.bonusPowerUpValue = computedStats.bonusPowerUpValue; 
         
+        this.bonusVampireHeal = computedStats.bonusVampireHeal;
+        this.bonusPowerUpDirectDamage = computedStats.bonusPowerUpDirectDamage;
+        this.bonusBulletCount = computedStats.bonusBulletCount;
+
         if (berserker) this.bonusChainDamage += berserker.value;
         
         const doomTicker = equipment.find(e => e.id === 'doom_ticker');
@@ -619,7 +653,7 @@ export class Ball {
         const areaFactor = 1.0 + areaAdd;
         this.radius = this.gridUnitSize * baseRadiusMult * Math.sqrt(areaFactor);
     }
-// ... (omitting rest of Ball methods)
+
     addHitToHistory() { if (this.isGhost) return; this.hitHistory.push(this.pos.copy()); if (this.hitHistory.length > 7) this.hitHistory.shift(); }
     handleDeath(board, hitEvents) { if (this.isDead) return; this.isDead = true; if (this.doomTickerDamage > 0) { const equipment = this.getActiveEquipment(); const tickerItem = equipment.find(e => e.id === 'doom_ticker'); const radius = tickerItem ? tickerItem.config.radiusTiles : 8; this.p.explode(this.pos.copy(), board.gridUnitSize * radius, this.doomTickerDamage, 'doom_ticker'); } hitEvents.push({ type: 'dying_ball_death', pos: this.pos.copy() }); }
     
@@ -781,7 +815,11 @@ export class Ball {
                 grow: 'grow_powerup_directDamage',
                 chase: 'chase_powerup_directDamage'
             }[this.type];
-            if (buffKey) this.powerUpDirectDamageStack += (state.upgradeBonuses[buffKey] || 0);
+            if (buffKey) {
+                let add = (state.upgradeBonuses[buffKey] || 0);
+                add += (this.bonusPowerUpDirectDamage || 0); // Include enchantment
+                this.powerUpDirectDamageStack += add;
+            }
         }
         
         let powerUpResult = { vfx: [{type: 'powerup', heart: this.pos.copy(), pos: this.pos.copy()}] };
@@ -841,6 +879,7 @@ export class Ball {
                     if (!isPeek) {
                         let count = ballTypeStats.bulletCountOnPowerup || 6;
                         count += (state.upgradeBonuses.gatling_powerup_bulletCount || 0);
+                        count += (this.bonusBulletCount || 0); // Include enchantment
                         this.gatlingShotsLeft = count; this.gatlingTimer = 0; 
                     }
                     powerUpResult.sound = 'bulletFire';

@@ -27,6 +27,17 @@ export function explode(p, pos, radius, damage, source = 'ball', context) {
         }
         
         if (bonusKey) finalDamage += (state.upgradeBonuses[bonusKey] || 0);
+
+        // Apply Enchantment Multipliers
+        const ball = ballsInPlay[0];
+        if (ball) {
+            // Decouple logic: If ball type is Draining, skip the direct hit 'damageMultiplier' (Option B)
+            // ensuring Option C (explosion multiplier) is independent.
+            if (activeBallType !== 'draining' && ball.damageMultiplier) {
+                 finalDamage *= ball.damageMultiplier;
+            }
+            if (ball.explosionDamageMultiplier) finalDamage *= ball.explosionDamageMultiplier;
+        }
     }
 
     const equipment = state.ballEquipment[activeBallType]?.filter(Boolean) || [];

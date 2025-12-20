@@ -14,6 +14,14 @@ let ingredientSlots = [null, null, null];
 let enchantmentResult = null; // { success: bool, outcome: object|null, detailText: string }
 let isEnchanting = false;
 
+// Helper to format values or ranges
+const formatStatValue = (v) => {
+    if (v && typeof v === 'object' && v.min !== undefined && v.max !== undefined) {
+        return `${v.min.toFixed(1)}-${v.max.toFixed(1)}`;
+    }
+    return typeof v === 'number' ? v.toFixed(1) : v;
+};
+
 export const BALL_ENCHANTMENT_DISPLAY_CONFIG = {
     classic: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
@@ -32,13 +40,22 @@ export const BALL_ENCHANTMENT_DISPLAY_CONFIG = {
     ],
     explosive: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
-        { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
+        { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.19, format: v => v.toFixed(1) },
         { key: 'C', name: 'Explosion Radius', getCurrent: (base, ench) => (base.radiusTiles || 0) + (ench.bonusPowerUpValue || 0), getIncrease: () => 0.2, format: v => v.toFixed(1) }
     ],
     draining: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Explosion Radius', getCurrent: (base, ench) => (base.radiusTiles || 0) + (ench.bonusPowerUpValue || 0), getIncrease: () => 0.2, format: v => v.toFixed(1) }
+        { 
+            key: 'C', 
+            name: 'Explosion Damage', 
+            getCurrent: (base, ench) => ({ 
+                min: base.explosiveDamageMin * (ench.explosionDamageMultiplier || 1.0), 
+                max: base.explosiveDamageMax * (ench.explosionDamageMultiplier || 1.0) 
+            }), 
+            getIncrease: (curr) => ({ min: curr.min * 0.15, max: curr.max * 0.15 }), 
+            format: formatStatValue
+        }
     ],
     spray: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
@@ -53,7 +70,7 @@ export const BALL_ENCHANTMENT_DISPLAY_CONFIG = {
     phaser: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Shield Duration', getCurrent: (base, ench) => ench.bonusEnergyShieldDuration || 0, getIncrease: () => 0.7, format: v => `${v.toFixed(1)}s` }
+        { key: 'C', name: 'Power-up Buff', getCurrent: (base, ench) => (base.damageBuffOnPowerUp || 0) + (ench.bonusPowerUpDirectDamage || 0), getIncrease: () => 2, format: v => v }
     ],
     grow: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
@@ -73,7 +90,7 @@ export const BALL_ENCHANTMENT_DISPLAY_CONFIG = {
     cell: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Main Ball Armor', getCurrent: (base, ench) => ench.bonusMainBallArmor || 0, getIncrease: () => 1, format: v => v }
+        { key: 'C', name: 'Vampire Heal', getCurrent: (base, ench) => ench.bonusVampireHeal || 0, getIncrease: () => 2, format: v => v }
     ],
     brick: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
@@ -103,22 +120,22 @@ export const BALL_ENCHANTMENT_DISPLAY_CONFIG = {
     gatling: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Extra Bullets', getCurrent: (base, ench) => ench.bonusLastPowerUpBulletCount || 0, getIncrease: () => 4, format: v => v }
+        { key: 'C', name: 'Bullet Count', getCurrent: (base, ench) => (base.bulletCountOnPowerup || 0) + (ench.bonusBulletCount || 0), getIncrease: () => 2, format: v => v }
     ],
     homing: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Homing Dmg', getCurrent: (base, ench) => (base.damage || 0) + (ench.bonusHomingExplosionDamage || 0), getIncrease: () => 10, format: v => v }
+        { key: 'C', name: 'Homing Damage', getCurrent: (base, ench) => (base.damage || 0) + (ench.bonusHomingExplosionDamage || 0), getIncrease: () => 10, format: v => v }
     ],
     seeker: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Homing Dmg', getCurrent: (base, ench) => (base.damage || 0) + (ench.bonusHomingExplosionDamage || 0), getIncrease: () => 10, format: v => v }
+        { key: 'C', name: 'Homing Damage', getCurrent: (base, ench) => (base.damage || 0) + (ench.bonusHomingExplosionDamage || 0), getIncrease: () => 10, format: v => v }
     ],
     chase: [
         { key: 'A', name: 'Hit Point', getCurrent: (base, ench) => base.hp * ench.hpMultiplier, getIncrease: (curr) => curr * 0.15, format: v => v.toFixed(0) },
         { key: 'B', name: 'Direct Damage', getCurrent: (base, ench) => base.baseDamage * ench.damageMultiplier, getIncrease: (curr) => curr * 0.26, format: v => v.toFixed(1) },
-        { key: 'C', name: 'Homing Dmg', getCurrent: (base, ench) => (base.damage || 0) + (ench.bonusHomingExplosionDamage || 0), getIncrease: () => 10, format: v => v }
+        { key: 'C', name: 'Power-up Buff', getCurrent: (base, ench) => (base.damageBuff || 0) + (ench.bonusPowerUpDirectDamage || 0), getIncrease: () => 2, format: v => v }
     ],
 };
 
@@ -175,9 +192,10 @@ function handleEnchant() {
 function getStatsFromInstance(ballInstance) {
     const stats = { 
         level: ballInstance.level,
-        hpMultiplier: 1.0, damageMultiplier: 1.0, bonusChainDamage: 0, 
+        hpMultiplier: 1.0, damageMultiplier: 1.0, explosionDamageMultiplier: 1.0, bonusChainDamage: 0, 
         bonusPowerUpValue: 0, bonusEnergyShieldDuration: 0, bonusMainBallArmor: 0,
         bonusPowerUpMineCount: 0, bonusLastPowerUpBulletCount: 0, bonusHomingExplosionDamage: 0,
+        bonusVampireHeal: 0, bonusPowerUpDirectDamage: 0, bonusBulletCount: 0,
         productionCostMultiplier: 1.0 
     };
     
@@ -234,10 +252,18 @@ function executeEnchantLogic() {
         if (statConf) {
             const valBefore = statConf.getCurrent(baseStats, statsBefore);
             const valAfter = statConf.getCurrent(baseStats, statsAfter);
-            const diff = valAfter - valBefore;
-            // Format +X.X or +X
-            const diffFormatted = Number.isInteger(diff) ? diff : diff.toFixed(1);
-            detailText = `${statConf.name} +${diffFormatted}`;
+            
+            // Handle range objects (DrainingBall C)
+            if (valAfter && typeof valAfter === 'object' && valAfter.min !== undefined) {
+                const diffMin = valAfter.min - valBefore.min;
+                const diffMax = valAfter.max - valBefore.max;
+                detailText = `${statConf.name} +${diffMin.toFixed(1)}-${diffMax.toFixed(1)}`;
+            } else {
+                const diff = valAfter - valBefore;
+                // Format +X.X or +X
+                const diffFormatted = Number.isInteger(diff) ? diff : diff.toFixed(1);
+                detailText = `${statConf.name} +${diffFormatted}`;
+            }
         }
 
         enchantmentResult = { success: true, outcome: outcome, detailText: detailText };
@@ -328,7 +354,7 @@ export function renderEnchantmentUI() {
             const increaseValue = statConf.getIncrease(currentValue);
             const diamonds = '♦'.repeat(outcomeCounts[statConf.key] || 0);
             
-            // Format increase part: " +17 ? "
+            // Format increase part: " +17 ? " or " +1.5-6.0 ? "
             const increasePart = currentLevel < maxLevel 
                 ? `<span style="color:#98FB98;">+${statConf.format(increaseValue)} ?</span>` 
                 : '';
