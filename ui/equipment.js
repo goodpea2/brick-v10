@@ -1,4 +1,3 @@
-
 // ui/equipment.js
 import * as dom from '../dom.js';
 import { state } from '../state.js';
@@ -13,32 +12,60 @@ function getGameController() {
     return state.p5Instance; 
 }
 
-function showTooltip(item) {
-    if (!item || !dom.equipmentTooltipContainer) return;
-    dom.equipmentTooltipContainer.className = `rarity-${item.rarity}`;
+function showTooltip(item, element) {
+    if (!item || !dom.ballTooltip || !element) return;
+    
+    // Repurpose ballTooltip for equipment
+    dom.ballTooltip.className = `rarity-${item.rarity}`;
     
     let trialNote = '';
     if (state.gameMode === 'trialRun') {
         trialNote = `<div style="color: #ffaa00; font-size: 0.9em; margin-top: 5px; font-style: italic;">Consumable in Trial Run (1 Use)</div>`;
     }
 
-    dom.equipmentTooltipContainer.innerHTML = `
-        <div class="tooltip-header">
-            <span class="tooltip-name rarity-${item.rarity}">${item.name}</span>
-            <span class="tooltip-rarity rarity-${item.rarity}">${item.rarity}</span>
+    dom.ballTooltip.innerHTML = `
+        <div class="tooltip-header" style="margin-bottom: 4px;">
+            <span class="tooltip-name rarity-${item.rarity}" style="font-weight:bold;">${item.name}</span>
+            <span class="tooltip-rarity rarity-${item.rarity}" style="font-size:0.8em; opacity:0.8; margin-left:10px;">${item.rarity}</span>
         </div>
-        <div class="tooltip-effect">${item.effectText}</div>
-        <div class="tooltip-desc">${item.description}</div>
+        <div class="tooltip-effect" style="color:#98FB98; font-size:1.1em; margin: 4px 0;">${item.effectText}</div>
+        <div class="tooltip-desc" style="font-size:0.9em; color:#ccc;">${item.description}</div>
         ${trialNote}
     `;
-    dom.equipmentTooltipContainer.style.visibility = 'visible';
-    dom.equipmentTooltipContainer.style.opacity = '1';
+
+    // Make it visible
+    dom.ballTooltip.style.visibility = 'visible';
+    dom.ballTooltip.style.opacity = '1';
+
+    // Positioning Logic (Mirroring showBallTooltip)
+    const rect = element.getBoundingClientRect();
+    const tooltipRect = dom.ballTooltip.getBoundingClientRect();
+    const isLandscape = window.innerWidth > window.innerHeight;
+
+    let top, left;
+
+    if (isLandscape) {
+        top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+        left = rect.right + 10;
+    } else {
+        top = rect.top - tooltipRect.height - 10;
+        left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    }
+
+    // Boundary checks
+    if (left < 5) left = 5;
+    if (left + tooltipRect.width > window.innerWidth - 5) left = window.innerWidth - tooltipRect.width - 5;
+    if (top < 5) top = 5;
+    if (top + tooltipRect.height > window.innerHeight - 5) top = window.innerHeight - tooltipRect.height - 5;
+    
+    dom.ballTooltip.style.top = `${top}px`;
+    dom.ballTooltip.style.left = `${left}px`;
 }
 
 function hideTooltip() {
-    if (!dom.equipmentTooltipContainer) return;
-    dom.equipmentTooltipContainer.style.visibility = 'hidden';
-    dom.equipmentTooltipContainer.style.opacity = '0';
+    if (!dom.ballTooltip) return;
+    dom.ballTooltip.style.visibility = 'hidden';
+    dom.ballTooltip.style.opacity = '0';
 }
 
 function findEquippedItemOwner(itemId) {
@@ -105,8 +132,6 @@ export function renderEquipmentUI() {
             visual.innerHTML = '<span style="display:flex;justify-content:center;align-items:center;height:100%;color:#555;font-size:10px;">EMPTY</span>';
         }
         
-        // REMOVED: Label div with name as per request
-
         const slotsContainer = document.createElement('div');
         slotsContainer.className = 'ball-equipment-slots';
 
@@ -133,7 +158,7 @@ export function renderEquipmentUI() {
                         slot.innerHTML = `<span class="equipment-icon">${equippedItem.icon}</span>`;
                     }
                     
-                    slot.addEventListener('mouseenter', () => showTooltip(equippedItem));
+                    slot.addEventListener('mouseenter', () => showTooltip(equippedItem, slot));
                     slot.addEventListener('mouseleave', hideTooltip);
 
                     slot.onclick = () => {
@@ -260,7 +285,6 @@ export function renderEquipmentUI() {
         }
 
         row.appendChild(visual);
-        // row.appendChild(labelDiv); // Removed label
         row.appendChild(slotsContainer);
         row.appendChild(actionContainer);
         dom.equipmentBallSlotsContainer.appendChild(row);
@@ -281,7 +305,7 @@ export function renderEquipmentUI() {
             card.classList.add('selected');
         }
         
-        card.addEventListener('mouseenter', () => showTooltip(item));
+        card.addEventListener('mouseenter', () => showTooltip(item, card));
         card.addEventListener('mouseleave', hideTooltip);
 
         card.onclick = () => {

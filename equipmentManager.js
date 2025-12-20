@@ -1,4 +1,3 @@
-
 // equipmentManager.js
 // Handles all equipment logic by listening to game events.
 
@@ -251,7 +250,8 @@ function onBrickDestroyed(payload) {
     const isMini = sourceBall instanceof MiniBall;
 
     // Apply Enchantment Vampirism first
-    if (sourceBall.bonusVampireHeal > 0) {
+    // CellBall's vampire heal should only trigger when the main ball breaks a brick
+    if (!isMini && sourceBall.bonusVampireHeal > 0) {
         if(state.p5Instance) state.p5Instance.healBall(sourceBall.bonusVampireHeal);
     }
 

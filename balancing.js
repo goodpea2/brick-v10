@@ -1,4 +1,3 @@
-
 // balancing.js
 
 export const BALL_FAMILIES = {
@@ -132,6 +131,7 @@ export const BALL_STATS = {
             brickHitDamage: 2,
             baseDamage: 10,
             powerUpUses: 2,
+            contactCount: 5,
             radiusMultiplier: 0.28,
             growAmount: 0.5, // +50% Area
             damageBuffOnPowerUp: 0,
