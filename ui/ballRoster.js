@@ -534,13 +534,89 @@ function executeScrap() {
 
 function updateSummonUI() {
     const shellCountEl = document.getElementById('summonShellCount');
+    const essenceCountEl = document.getElementById('summonEssenceCount');
     const summonBtn = document.getElementById('summonActionBtn');
     
     if (shellCountEl) shellCountEl.textContent = state.playerShells;
+    if (essenceCountEl) essenceCountEl.textContent = state.playerBallEssence;
     if (summonBtn) {
         summonBtn.disabled = state.playerShells < ROSTER_CONSTANTS.RANDOM_BALL_COST;
-        summonBtn.textContent = `Summon (${ROSTER_CONSTANTS.RANDOM_BALL_COST} 🐚)`;
+        summonBtn.textContent = `${ROSTER_CONSTANTS.RANDOM_BALL_COST} 🐚`;
     }
+
+    renderEssenceShopUI();
+}
+
+function renderEssenceShopUI() {
+    const grid = document.getElementById('essenceShopGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    // Get all unique types from families, excluding giant
+    const types = [];
+    Object.values(BALL_FAMILIES).forEach(family => {
+        if (family.root !== 'giant') {
+            types.push(family.root);
+            if (family.children) types.push(...family.children);
+        }
+    });
+    
+    // SORTING LOGIC FOR SHOP:
+    // 1. Tier 1 (Evo 1) then Tier 2 (Evo 2)
+    // 2. Within each tier, use Inventory sort order (Family index)
+    types.sort((a, b) => {
+        const statsA = BALL_STATS.types[a];
+        const statsB = BALL_STATS.types[b];
+        const tierA = statsA.evoTier || 1;
+        const tierB = statsB.evoTier || 1;
+
+        if (tierA !== tierB) return tierA - tierB;
+        
+        const sortA = getBallSortData(a);
+        const sortB = getBallSortData(b);
+        return sortA.familyIndex - sortB.familyIndex;
+    });
+
+    types.forEach(type => {
+        const stats = BALL_STATS.types[type];
+        if (!stats) return;
+
+        const tier = stats.evoTier || 1;
+        const cost = tier === 1 ? 4 : 20;
+        const canAfford = state.playerBallEssence >= cost;
+        const textData = BALL_TEXT[type] || { name: type, description: '' };
+
+        const card = document.createElement('div');
+        card.className = 'upgrade-card';
+        card.innerHTML = `
+            <div>
+                <div class="upgrade-card-header">${textData.name}</div>
+                <div class="upgrade-card-stat" style="display: flex; justify-content: center; margin: 10px 0;">
+                    <div class="ball-visual" style="width: 40px; height: 40px; background-image: url(${ballVisuals[type]});"></div>
+                </div>
+                <div style="font-size: 0.8em; color: #aaa; margin-bottom: 10px; min-height: 3.2em;">${textData.description}</div>
+            </div>
+            <button class="upgrade-cost-button" ${!canAfford ? 'disabled' : ''}>${cost} ✨</button>
+        `;
+
+        const buyBtn = card.querySelector('button');
+        buyBtn.onclick = () => {
+            if (state.playerBallEssence >= cost) {
+                state.playerBallEssence -= cost;
+                const newInstance = createBallInstance(type);
+                state.ballInventory.push(newInstance);
+                sounds.ballGained();
+                updateSummonUI();
+                
+                // FEEDBACK
+                if(gameController?.addFloatingText) {
+                    gameController.addFloatingText(`Purchased ${textData.name}!`, {levels:[0, 255, 255]}, {isBold: true, size: 24, glow: true});
+                }
+            }
+        };
+
+        grid.appendChild(card);
+    });
 }
 
 function handleSummon() {

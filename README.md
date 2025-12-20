@@ -34,7 +34,17 @@ The shop uses an **Additive Argument System** for all ball-specific upgrades.
 
 ---
 
-### 2. Core Systems
+### 2. Essence Shop & Ball Summoning
+
+The **Summon & Purchase** modal (accessible from Ball Roster) allows players to expand their collection:
+*   **Random Summon**: Spend Shells (🐚) for a random ball instance.
+*   **Direct Purchase**: Spend Essence (✨) for specific balls.
+*   **Pricing**: Evo 1 balls cost 4 Essence; Evo 2 balls cost 20 Essence.
+*   **Sorting**: The Essence Shop displays all Evo 1 balls followed by all Evo 2 balls. Within each tier, balls are grouped by Family (Classic, Split, etc.), consistent with the inventory layout.
+
+---
+
+### 3. Core Systems
 
 *   **`index.js`**: Entry point. Initializes the p5 instance and the `gameController`.
 *   **`sketch.js`**: Contains the main game loop (`draw`), physics updates, and coordinates state transitions.
@@ -46,7 +56,7 @@ The shop uses an **Additive Argument System** for all ball-specific upgrades.
 
 ---
 
-### 3. The Event System (`eventManager.js`)
+### 4. The Event System (`eventManager.js`)
 
 To decouple complex interactions (especially Equipment effects), the game uses a Publish/Subscribe pattern.
 *   **Publishers**: Core logic triggers events like `BallHitWall`, `BrickDestroyed`, `TurnStart`, `CoinCollected`.
@@ -55,7 +65,7 @@ To decouple complex interactions (especially Equipment effects), the game uses a
 
 ---
 
-### 4. Ball Roster System
+### 5. Ball Roster System
 
 Moved from "Global Ball Types" to "Individual Ball Instances".
 *   **Inventory (`state.ballInventory`)**: An array of ball objects. Each has a unique `instanceId`, `type`, `level`, and specific `outcomes` (enchantment history).
@@ -64,7 +74,7 @@ Moved from "Global Ball Types" to "Individual Ball Instances".
 
 ---
 
-### 5. Home Base & Economy
+### 6. Home Base & Economy
 
 *   **Bricks as Buildings**: In Home Base mode, bricks function as buildings (`Farmland`, `Sawmill`, `BallProducer`).
 *   **Logic**: `brickLogic.js`, `farmland.js`, and `sawmill.js` handle resource generation and interactions.
@@ -73,7 +83,7 @@ Moved from "Global Ball Types" to "Individual Ball Instances".
 
 ---
 
-### 6. Rendering
+### 7. Rendering
 
 *   **`render.js`**: Main rendering routine. Handles camera shake, drawing the board, and delegating entity drawing.
 *   **`brickVisual.js`**: Procedural generation of brick visuals based on type and health threshold (e.g., gears for factories).

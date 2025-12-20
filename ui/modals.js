@@ -170,7 +170,7 @@ export function showLevelCompleteModal(stats, gameController, level) {
             const costFood = Math.max(5, Math.floor(nextCoinPool * 0.25 * (1 + Math.random() * 2)));
             currentFinalChoices.push({ 
                 type: 'food', 
-                text: `Continue 🥕 (cost ${costFood}🪙)`, 
+                text: `Continue 🥕 for ${costFood}🪙`, 
                 description: `Spend ${costFood} coins to force a Food Room.`, 
                 cost: costFood 
             });
@@ -179,7 +179,7 @@ export function showLevelCompleteModal(stats, gameController, level) {
             const costWood = Math.max(5, Math.floor(nextCoinPool * 0.25 * (1 + Math.random() * 2)));
             currentFinalChoices.push({ 
                 type: 'wood', 
-                text: `Continue 🪵 (cost ${costWood}🪙)`, 
+                text: `Continue 🪵 for ${costWood}🪙`, 
                 description: `Spend ${costWood} coins to force a Wood Room.`, 
                 cost: costWood 
             });
